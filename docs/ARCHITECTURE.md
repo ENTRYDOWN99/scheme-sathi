@@ -1,39 +1,55 @@
-# Scheme Saathi – Architecture & Security Specification
+# Scheme Saathi – Unified Architecture & Security Specification
 
 ## 1. System Overview
-**Scheme Saathi** is a bilingual (Hindi `hi` / English `en`) Government Welfare Scheme Assistant and Collaborative Task Management application built natively for Android using Kotlin, Jetpack Compose (Material 3), Firebase Authentication (Google Sign-In via Jetpack Credential Manager), Cloud Firestore, Firebase App Check, and Firebase AI Logic (`Firebase.ai`).
+**Scheme Saathi** is a bilingual (Hindi `hi` / English `en`, extensible i18n) Government Welfare Scheme Assistant and Collaborative Task Management platform delivered in two client forms powered by **one shared backend**:
+1. **Shared Backend (`/backend`)**: Node.js 24 + TypeScript + Express REST API with OpenAPI 3.0 / Swagger UI (`/api/docs`), JWT + rotating Refresh Token auth, server-side RBAC (`CITIZEN`, `CSC_OPERATOR`, `SUPERVISOR`, `REVIEWER`), deterministic Eligibility Engine (single source of truth), AES-256-GCM PII encryption at rest, rate limiting, audit logging, and a resilient Gemini AI service wrapper (with retries, timeouts, and deterministic offline fallback). Retains `firestore.rules` for Firebase emulator rules verification.
+2. **Responsive Website (`/web`)**: Next.js 15 (App Router, TypeScript) + Tailwind CSS PWA with `httpOnly` cookie session handling, SEO landing page, full feature parity, WCAG AA accessibility, Light/Dark mode, and Large Text toggle.
+3. **Native Mobile App (`/app`)**: Native Android (Kotlin, Jetpack Compose, Material 3) connected to the shared `/backend` REST API (via Retrofit + OkHttp + Keystore-secured token storage), Room offline cache for schemes and checklists, local push notifications for alerts, and localized string resources (`res/values*`).
+
+```text
++-----------------------+       HTTPS / REST JSON        +----------------------------------+
+|  Next.js Web PWA      | -----------------------------> |  Shared Backend API (/backend)   |
+|  (/web, httpOnly JWT) |                                |  • Auth (OTP/Password, JWT+Ref)  |
++-----------------------+                                |  • RBAC Middleware (4 Roles)     |
+                                                         |  • Deterministic Rule Engine     |
++-----------------------+       HTTPS / REST JSON        |  • OpenAPI 3.0 (/api/docs)       |
+|  Android Compose App  | -----------------------------> |  • AES-256-GCM PII Vault         |
+|  (/app, Keystore JWT) |                                |  • Audit Logs & Rate Limiter     |
+|  + Room Offline Cache |                                +--------+----------------+--------+
++-----------------------+                                         |                |
+                                                                  v                v
+                                                         +---------------+  +---------------+
+                                                         | SQLite / PG   |  | Gemini AI API |
+                                                         | Migrations &  |  | (Retries +    |
+                                                         | Seed Data     |  | Fallback)     |
+                                                         +---------------+  +---------------+
+```
 
 ## 2. Core Architectural Layers
-1. **UI & Presentation Layer (`com.example.ui.*`)**:
-   - Responsive, mobile-first Jetpack Compose screens styled with the civic palette (`#1B5E3F` forest green, `#E07B00` saffron, `#F6F4EF` warm cream, `#FFFFFF` surface) and bundled typography (18sp default / 22sp Large Text mode).
-   - Root authentication gate (`AuthGateScreen`) enforcing Google Sign-In before instantiating feature ViewModels or attaching Firestore snapshot listeners.
-   - Clean, end-user friendly UI: debug/workflow hubs gated behind `BuildConfig.DEBUG`, plain action labels ("Deep Thinking", "Fast Answers"), and localized role and status labels without mixed language artifacts.
-2. **Deterministic Domain Layer (`com.example.domain.EligibilityEngine`)**:
-   - Pure, synchronous, I/O-free rule evaluator supporting `ELIGIBLE`, `NOT_ELIGIBLE`, and `UNKNOWN`.
-   - Operators: `EQ`, `NEQ`, `LT`, `LTE`, `GT`, `GTE`, `IN`, `NOT_IN`, `BETWEEN`, `EXISTS`, `EXTERNAL_LOOKUP`.
-   - Combinators: `ALL` (any `NOT_ELIGIBLE` -> `NOT_ELIGIBLE`; else any `UNKNOWN` -> `UNKNOWN`; else `ELIGIBLE`) and `ANY` (any `ELIGIBLE` -> `ELIGIBLE`; all `NOT_ELIGIBLE` -> `NOT_ELIGIBLE`; else `UNKNOWN`).
-   - State-specific income threshold overrides (`Uttar Pradesh`, `Bihar`, `Maharashtra`, `Madhya Pradesh`, `Rajasthan`) and external beneficiary lookup guidance (`PM-JAY`).
-3. **AI & Voice Orchestration Layer (`com.example.ai.SchemeSaathiAiService`)**:
-   - Multi-model Gemini integration via Firebase AI Logic (`Firebase.ai`) with a robust Model Fallback Chain:
-     - `gemini-3.8-flash`: Primary multi-turn conversational assistant (Free Tier). Supports streaming chat and grounded tool results.
-     - `gemini-3.1-flash-lite`: Low-latency fast text mode and primary text fallback.
-     - `gemini-3.8-flash-tts`: Speech script preparation paired with Android `TextToSpeech` (`hi-IN` / `en-IN`), with fallback to `gemini-3.8-flash`.
-     - `gemini-4-carbon`: High Thinking reasoning mode (fallback chain: `gemini-4-carbon` -> `gemini-3.8-flash` with `ThinkingLevel.HIGH` -> `gemini-3.1-flash-lite`).
-   - **Central Error Mapper & Graceful Degradation**:
-     - Quota / Rate-limit (429, limit 0, ResourceExhausted) -> user-friendly bilingual notice ("AI is busy right now, please try again in a minute" / "AI सर्वर अभी व्यस्त है...").
-     - Network timeouts / connectivity errors -> friendly connection notice ("Please check your internet connection...").
-     - Raw exception strings and URLs are logged with `Log.e` only and never exposed in the UI.
-     - Chat complete fallback: Deterministic offline rule summary (`buildDeterministicWizardFallback`).
-   - **Strict Safety Invariants**:
-     - Client-side PII redaction before LLM calls (`SecurityUtils.redactPiiForLlm`).
-     - Regex Aadhaar blocker (`SecurityUtils.containsAadhaarNumber`).
-     - Prompt injection and auto-submit refusal (`SecurityUtils.detectPromptInjectionOrAutoSubmit`).
-     - Zero form submission tools exposed to the LLM (Mandatory Human Confirmation Gate with SHA-256 snapshot hash).
-4. **Encrypted Data & Repository Layer (`com.example.data.repository.SchemeSaathiRepository`)**:
-   - Field-level AES-256-GCM encryption (`SecurityUtils.encryptPii`) for citizen Name, Phone, and Date of Birth (`encryptedDob`) prior to Cloud Firestore persistence.
-   - Date of Birth parsing, validation, and age calculation via `DateUtils`:
-     - Strict calendar validation rejecting invalid calendar dates (e.g. `31/02/2000`, non-leap `29/02/2001`), future dates, and ages outside 0–120 years.
-     - Accurate birthday calculation accounting for whether the citizen's birthday has occurred yet in the reference year.
-     - Backward compatibility: profiles with only `birthYear` and voice-only flows evaluate age gracefully, displaying the DOB field empty until completed.
-     - Privacy guarantee: Date of Birth is never shared with Gemini AI; only the calculated age is supplied to tool summaries.
-   - User-scoped subcollections (`/users/{userId}/profile/{docId}`, `/users/{userId}/applications/{applicationId}`, `/users/{userId}/tasks/{taskId}`) protected by zero-trust `firestore.rules`.
+
+### 2.1 Shared Design System & i18n (`/shared`)
+- **`shared/design-tokens`**: Canonical color tokens (`#1B5E3F` Civic Green, `#E07B00` Accent Saffron, `#F6F4EF` Cream background, semantic `ELIGIBLE`/`UNKNOWN`/`NOT_ELIGIBLE` colors, Light & Dark modes) and typography scale (`18sp`/`22sp` Large Text mode).
+- **`shared/i18n`**: Structured JSON localization bundles (`en.json`, `hi.json`) consumed by `/web` and synchronized with Android `strings.xml` / `values-hi/strings.xml`, extensible to additional Indian languages (`mr`, `bn`, `ta`, etc.).
+- **`shared/api-client`**: OpenAPI 3.0 specification and typed TypeScript REST client shared by `/web` and integration tests.
+
+### 2.2 Backend (`/backend`)
+- **Database & Migrations**: Relational schema (`users`, `refresh_tokens`, `citizen_profiles`, `schemes`, `document_checklists`, `applications`, `tasks`, `audit_logs`) with SQL migrations and deterministic seed data (`PM-KISAN`, `NSAP-IGNOAPS`, `PMUY`, `PM-JAY`, `APY` + 4 role sample accounts). Supports SQLite (`node:sqlite`) for fast local/CI testing and PostgreSQL (`pg`) via `DATABASE_URL` in Docker/production.
+- **Deterministic Eligibility Engine (`backend/src/domain/eligibilityEngine.ts`)**: Single source of truth evaluating `ALL` and `ANY` combinators (`EQ`, `NEQ`, `LT`, `LTE`, `GT`, `GTE`, `IN`, `NOT_IN`, `BETWEEN`, `EXISTS`, `EXTERNAL_LOOKUP`), state income overrides, DOB birthday age math (`DD/MM/YYYY`), voice age confirmation gates, and `UNKNOWN` handling.
+- **AI Gateway (`backend/src/services/aiService.ts`)**: Wraps Gemini REST/SDK behind timeouts, exponential retry on transient errors, pre-prompt Aadhaar/prompt-injection/PII redaction, deterministic tool grounding, strict 3-bucket error mapping (`busy` / `network` / `generic`), and full deterministic summary fallback.
+- **Security & Compliance**:
+  - Helmet security headers, locked-down CORS (`CORS_ORIGIN`), Express rate limiting (`express-rate-limit`), Zod schema validation.
+  - Aadhaar regex guard (`\b\d{12}\b` after separator stripping) rejects 12-digit inputs at API boundary without false-positives on dates (`01/01/1964`).
+  - Field-level AES-256-GCM encryption at rest (`PII_ENCRYPTION_KEY`) for Name, Phone, and Date of Birth (`DD/MM/YYYY`), unique 12-byte random IV per write.
+  - Immutable `audit_logs` table recording auth, consent, role changes, application confirmation, status verification, and task actions without logging PII.
+  - DPDP endpoints: consent toggle, full JSON data export (`GET /api/v1/profile/export`), and full account erasure (`DELETE /api/v1/profile`).
+
+### 2.3 Website (`/web`)
+- Next.js 15 App Router + TypeScript + Tailwind CSS, installable PWA (`manifest.webmanifest` + service worker).
+- Full bilingual parity (`hi`/`en`), Large Text mode, Light/Dark theme switcher, WCAG AA keyboard navigation & skip links, SEO-friendly landing page.
+- Complete workflows: OTP/demo login, role-aware dashboard (Citizen, CSC Operator queue, Reviewer verification, Supervisor audit), profile with DD/MM/YYYY calendar picker + auto-slash formatting, deterministic eligibility breakdown, persistent document checklist, guided application form with Human Confirmation Gate (SHA-256 snapshot verification), AI Chat + Web Speech voice assistant, Alerts/Tasks, and DPDP Settings.
+
+### 2.4 Android App (`/app`)
+- Native Kotlin + Jetpack Compose (Material 3) preserving all existing screens while connecting to `/backend` REST API via Retrofit + OkHttp (`ApiClient.kt` + `TokenStore.kt` backed by Android Keystore AES-GCM encryption).
+- Offline-first Room cache (`SchemeSaathiDatabase`) for schemes, rules evaluation snapshots, and document checklists so users in low-connectivity rural areas can continue working offline and sync when reconnected.
+- Local Android `NotificationManager` channel for task & application alert notifications.
+- Externalized strings in `res/values/strings.xml` and `res/values-hi/strings.xml`.

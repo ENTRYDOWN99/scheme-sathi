@@ -29,8 +29,18 @@ local.properties
 # Firebase Configuration (Keep example, ignore actual credentials)
 app/google-services.json
 
-# Dependencies & Node (if any)
+# Dependencies & Node / Web / Backend Artifacts
 node_modules/
+.next/
+web/out/
+dist/
+backend/data/
+*.db
+*.sqlite
+*.sqlite3
+coverage/
+playwright-report/
+test-results/
 
 # IDE & Editor Specific
 .idea/

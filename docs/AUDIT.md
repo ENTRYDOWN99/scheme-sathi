@@ -1,5 +1,7 @@
 # Scheme Saathi (`saathi`) — Technical Audit & Target Architecture Proposal
 
+> **Note:** Historical audit of the original prototype (Step 0). Superseded: a shared Express backend in `/backend` now serves both `/web` and `/app`. See [ARCHITECTURE.md](ARCHITECTURE.md) for current state.
+
 > **Phase 1 / Step 0 Audit** — Verified directly against repository files on `main` (`4f6a60c`).
 
 ---

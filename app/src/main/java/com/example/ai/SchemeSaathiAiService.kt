@@ -38,22 +38,22 @@ enum class GeminiModelMode(
         descriptionEn = "Ultra-fast low-latency responses"
     ),
     HIGH_THINKING_CARBON(
-        modelId = "gemini-4-carbon",
-        labelEn = "High Thinking (gemini-4-carbon)",
-        labelHi = "गहन विश्लेषण (gemini-4-carbon)",
-        descriptionEn = "Deep reasoning with ThinkingLevel.HIGH"
+        modelId = "gemini-3.8-flash",
+        labelEn = "High Thinking (gemini-3.8-flash)",
+        labelHi = "गहन विश्लेषण (gemini-3.8-flash)",
+        descriptionEn = "Deep reasoning with ThinkingLevel.HIGH (Free Tier)"
     ),
     COMPLEX_ARGON(
-        modelId = "gemini-4-argon",
-        labelEn = "Complex & Vision (gemini-4-argon)",
-        labelHi = "दस्तावेज़ व जटिल (gemini-4-argon)",
-        descriptionEn = "Complex interactive & multimodal document understanding"
+        modelId = "gemini-3.8-flash",
+        labelEn = "Complex & Vision (gemini-3.8-flash)",
+        labelHi = "दस्तावेज़ व जटिल (gemini-3.8-flash)",
+        descriptionEn = "Complex interactive & multimodal document understanding (Free Tier)"
     ),
     LIVE_VOICE(
-        modelId = "gemini-3.8-live",
-        labelEn = "Live Voice (gemini-3.8-live)",
-        labelHi = "लाइव वॉइस (gemini-3.8-live)",
-        descriptionEn = "Real-time conversational voice mode"
+        modelId = "gemini-3.8-flash",
+        labelEn = "Live Voice (gemini-3.8-flash)",
+        labelHi = "लाइव वॉइस (gemini-3.8-flash)",
+        descriptionEn = "Real-time conversational voice mode (Free Tier)"
     ),
     TTS_AUDIO(
         modelId = "gemini-3.8-flash-tts",
@@ -92,10 +92,10 @@ class SchemeSaathiAiService {
         )
     }
 
-    // High Thinking model using gemini-4-carbon and ThinkingLevel.HIGH (no maxOutputTokens)
+    // High Thinking model using gemini-3.8-flash with ThinkingLevel.HIGH (Free Tier)
     private val highThinkingCarbonModel by lazy {
         Firebase.ai.generativeModel(
-            modelName = "gemini-4-carbon",
+            modelName = "gemini-3.8-flash",
             generationConfig = generationConfig {
                 thinkingConfig = thinkingConfig {
                     thinkingLevel = ThinkingLevel.HIGH
@@ -105,16 +105,18 @@ class SchemeSaathiAiService {
         )
     }
 
+    // Document vision model using gemini-3.8-flash (Free Tier, supports multimodal)
     private val argonModel by lazy {
         Firebase.ai.generativeModel(
-            modelName = "gemini-4-argon",
+            modelName = "gemini-3.8-flash",
             systemInstruction = content { text(systemPromptText) }
         )
     }
 
+    // Live voice model using gemini-3.8-flash (Free Tier)
     private val liveVoiceModel by lazy {
         Firebase.ai.generativeModel(
-            modelName = "gemini-3.8-live",
+            modelName = "gemini-3.8-flash",
             systemInstruction = content {
                 text("$systemPromptText Keep spoken responses concise (2-3 sentences) and natural for voice output.")
             }
@@ -308,7 +310,7 @@ class SchemeSaathiAiService {
     }
 
     /**
-     * Analyzes an uploaded citizen document/certificate image using model `gemini-4-argon`.
+     * Analyzes an uploaded citizen document/certificate image using model `gemini-3.8-flash`.
      */
     suspend fun analyzeDocumentImageWithArgon(
         bitmap: Bitmap,
@@ -318,7 +320,7 @@ class SchemeSaathiAiService {
         return try {
             val prompt = if (language == "hi") {
                 """
-                इस दस्तावेज़ छवि का विश्लेषण योजना '$schemeCode' के लिए करें (gemini-4-argon)।
+                इस दस्तावेज़ छवि का विश्लेषण योजना '$schemeCode' के लिए करें (gemini-3.8-flash)।
                 1. यह कौन सा दस्तावेज़ प्रतीत होता है? (जैसे खतौनी, राशन कार्ड, बैंक पासबुक, आयु प्रमाण पत्र)।
                 2. क्या इसमें नाम, जारी करने की तिथि या आधिकारिक मुहर स्पष्ट दिखाई दे रही है?
                 3. सुरक्षा नियम: यदि इसमें कोई 12 अंकों का आधार नंबर दिखे तो उसे कभी न लिखें ([REDACTED] लिखें)।
@@ -326,7 +328,7 @@ class SchemeSaathiAiService {
                 """.trimIndent()
             } else {
                 """
-                Analyze this citizen welfare document image for scheme '$schemeCode' using gemini-4-argon:
+                Analyze this citizen welfare document image for scheme '$schemeCode' using gemini-3.8-flash:
                 1. Identify the document type (e.g., Land Khatauni, BPL Ration Card, Bank Passbook, Age Certificate).
                 2. Check legibility, visible fields, and whether any information appears missing for '$schemeCode'.
                 3. PRIVACY RULE: Redact any 12-digit Aadhaar number as [REDACTED_AADHAAR].
@@ -346,12 +348,12 @@ class SchemeSaathiAiService {
             if (!text.isNullOrBlank()) {
                 Result.success(SecurityUtils.redactPiiForLlm(text))
             } else {
-                Result.failure(IllegalStateException("gemini-4-argon returned an empty analysis response."))
+                Result.failure(IllegalStateException("gemini-3.8-flash returned an empty analysis response."))
             }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.e(TAG, "Document image analysis with gemini-4-argon failed", e)
+            Log.e(TAG, "Document image analysis with gemini-3.8-flash failed", e)
             Result.failure(e)
         }
     }
@@ -383,7 +385,7 @@ class SchemeSaathiAiService {
     }
 
     /**
-     * Conducts a real-time Live Voice turn using model `gemini-3.8-live`.
+     * Conducts a real-time Live Voice turn using model `gemini-3.8-flash`.
      */
     suspend fun generateLiveVoiceTurn(
         spokenTranscript: String,

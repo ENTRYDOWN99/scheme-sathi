@@ -184,8 +184,16 @@ fun SchemeSaathiRootApp() {
                         val app = checkNotNull(this[APPLICATION_KEY]) {
                             "APPLICATION_KEY missing from CreationExtras"
                         }
-                        val databaseId = app.getString(R.string.firestore_database_id)
-                        val db = FirebaseFirestore.getInstance(databaseId)
+                        val databaseId = try {
+                            app.getString(R.string.firestore_database_id)
+                        } catch (e: Exception) {
+                            "(default)"
+                        }
+                        val db = try {
+                            FirebaseFirestore.getInstance(databaseId)
+                        } catch (e: Exception) {
+                            FirebaseFirestore.getInstance()
+                        }
                         SchemeSaathiViewModel(
                             repository = SchemeSaathiRepository(db, FirebaseAuth.getInstance()),
                             currentUserId = uid

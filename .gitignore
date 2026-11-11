@@ -1,19 +1,37 @@
-*.iml
-.gradle
-.kotlin
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
+# Gradle & Build Artifacts
+.gradle/
+.kotlin/
+build/
 /build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
-.env
-debug.keystore
+app/build/
+*.iml
+.cxx/
+.externalNativeBuild/
+captures/
 *-debug.log
+
+# Android Keystores & Signing Keys
+debug.keystore
+*.keystore
+*.jks
+
+# Android APK & Bundle Outputs
+*.apk
+*.aab
+SchemeSaathi.apk
+
+# Environment & Local Configuration
+local.properties
+/local.properties
+.env
+.env.local
+
+# Firebase Configuration (Keep example, ignore actual credentials)
+app/google-services.json
+
+# Dependencies & Node (if any)
+node_modules/
+
+# IDE & Editor Specific
+.idea/
+*.DS_Store

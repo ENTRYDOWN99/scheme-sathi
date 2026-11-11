@@ -63,7 +63,7 @@ export function authenticateRequest(
       phone: String(decoded.phone ?? ''),
       displayName: String(decoded.displayName ?? ''),
       role: decoded.role as Role,
-      preferredLanguage: (decoded.preferredLanguage === 'en' ? 'en' : 'hi')
+      preferredLanguage: decoded.preferredLanguage === 'en' ? 'en' : 'hi'
     };
     next();
   } catch {
@@ -98,7 +98,8 @@ export function resolveAccessibleUserId(
   if (!req.user) {
     return { errorStatus: 401, message: 'Authentication required.' };
   }
-  const target = requestedUserId && requestedUserId.trim().length > 0 ? requestedUserId.trim() : req.user.id;
+  const target =
+    requestedUserId && requestedUserId.trim().length > 0 ? requestedUserId.trim() : req.user.id;
   if (req.user.role === 'CITIZEN' && target !== req.user.id) {
     return { errorStatus: 403, message: 'Citizens can only access their own records.' };
   }

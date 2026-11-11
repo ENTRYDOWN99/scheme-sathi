@@ -27,33 +27,38 @@ const voiceAgeSchema = z.object({
 export function createAiRouter(db: DatabaseClient): Router {
   const router = Router();
 
-  router.post('/chat', authenticateRequest, aiRateLimiter, async (req: AuthenticatedRequest, res, next) => {
-    try {
-      const parsed = chatRequestSchema.parse(req.body);
-      const access = resolveAccessibleUserId(req, parsed.userId);
-      if ('errorStatus' in access) {
-        throw new AppError(access.errorStatus, 'FORBIDDEN', access.message);
+  router.post(
+    '/chat',
+    authenticateRequest,
+    aiRateLimiter,
+    async (req: AuthenticatedRequest, res, next) => {
+      try {
+        const parsed = chatRequestSchema.parse(req.body);
+        const access = resolveAccessibleUserId(req, parsed.userId);
+        if ('errorStatus' in access) {
+          throw new AppError(access.errorStatus, 'FORBIDDEN', access.message);
+        }
+
+        const profile = await getOrCreateProfile(db, access.userId, req.user?.displayName);
+        const language = parsed.language ?? profile.preferredLanguage;
+        const rows = await db.query<{ payload_json: string }>(
+          'SELECT payload_json FROM schemes ORDER BY id ASC'
+        );
+        const schemes = rows.map((r) => JSON.parse(r.payload_json) as GovernmentScheme);
+
+        const result = await generateGroundedChatReply({
+          prompt: parsed.prompt,
+          profile,
+          schemes,
+          language
+        });
+
+        res.json(result);
+      } catch (err) {
+        next(err);
       }
-
-      const profile = await getOrCreateProfile(db, access.userId, req.user?.displayName);
-      const language = parsed.language ?? profile.preferredLanguage;
-      const rows = await db.query<{ payload_json: string }>(
-        'SELECT payload_json FROM schemes ORDER BY id ASC'
-      );
-      const schemes = rows.map((r) => JSON.parse(r.payload_json) as GovernmentScheme);
-
-      const result = await generateGroundedChatReply({
-        prompt: parsed.prompt,
-        profile,
-        schemes,
-        language
-      });
-
-      res.json(result);
-    } catch (err) {
-      next(err);
     }
-  });
+  );
 
   router.post('/voice-age', authenticateRequest, async (req: AuthenticatedRequest, res) => {
     const parsed = voiceAgeSchema.parse(req.body);

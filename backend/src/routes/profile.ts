@@ -64,7 +64,7 @@ export function createProfileRouter(db: DatabaseClient): Router {
       const current = await getOrCreateProfile(db, access.userId, req.user?.displayName);
 
       const nextDob =
-        parsed.dateOfBirth !== undefined ? parsed.dateOfBirth.trim() : current.dateOfBirth ?? '';
+        parsed.dateOfBirth !== undefined ? parsed.dateOfBirth.trim() : (current.dateOfBirth ?? '');
       let nextBirthYear = parsed.birthYear !== undefined ? parsed.birthYear : current.birthYear;
 
       if (parsed.dateOfBirth !== undefined && nextDob.length > 0) {
@@ -83,7 +83,7 @@ export function createProfileRouter(db: DatabaseClient): Router {
       }
 
       const nextPhone =
-        parsed.phoneNumber !== undefined ? parsed.phoneNumber.trim() : current.phoneNumber ?? '';
+        parsed.phoneNumber !== undefined ? parsed.phoneNumber.trim() : (current.phoneNumber ?? '');
       const now = new Date().toISOString();
 
       await db.run(

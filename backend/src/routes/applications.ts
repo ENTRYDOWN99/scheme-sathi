@@ -208,72 +208,68 @@ export function createApplicationsRouter(db: DatabaseClient): Router {
   });
 
   // Strict Human Confirmation Gate — AI can never call/bypass this; snapshot hash must match!
-  router.post(
-    '/:id/confirm',
-    authenticateRequest,
-    async (req: AuthenticatedRequest, res, next) => {
-      try {
-        const parsed = confirmAppSchema.parse(req.body);
-        const appRow = await db.get<ApplicationRow>('SELECT * FROM applications WHERE id = ?', [
-          String(req.params.id)
-        ]);
-        if (!appRow) {
-          throw new AppError(404, 'APPLICATION_NOT_FOUND', 'Application not found.');
-        }
-        if (req.user!.role === 'CITIZEN' && appRow.user_id !== req.user!.id) {
-          throw new AppError(403, 'FORBIDDEN', 'Citizens can only confirm their own applications.');
-        }
-        if (parsed.confirmSnapshotHash !== appRow.applicant_snapshot_hash) {
-          throw new AppError(
-            409,
-            'SNAPSHOT_HASH_MISMATCH',
-            'Application snapshot changed or hash does not match. Re-verify fields before confirming.'
-          );
-        }
+  router.post('/:id/confirm', authenticateRequest, async (req: AuthenticatedRequest, res, next) => {
+    try {
+      const parsed = confirmAppSchema.parse(req.body);
+      const appRow = await db.get<ApplicationRow>('SELECT * FROM applications WHERE id = ?', [
+        String(req.params.id)
+      ]);
+      if (!appRow) {
+        throw new AppError(404, 'APPLICATION_NOT_FOUND', 'Application not found.');
+      }
+      if (req.user!.role === 'CITIZEN' && appRow.user_id !== req.user!.id) {
+        throw new AppError(403, 'FORBIDDEN', 'Citizens can only confirm their own applications.');
+      }
+      if (parsed.confirmSnapshotHash !== appRow.applicant_snapshot_hash) {
+        throw new AppError(
+          409,
+          'SNAPSHOT_HASH_MISMATCH',
+          'Application snapshot changed or hash does not match. Re-verify fields before confirming.'
+        );
+      }
 
-        const now = new Date().toISOString();
-        const handoffObj = appRow.handoff_pack_json
-          ? (JSON.parse(appRow.handoff_pack_json) as Record<string, unknown>)
-          : {};
-        handoffObj.humanConfirmed = true;
-        handoffObj.humanConfirmedAt = now;
-        handoffObj.confirmedByActorId = req.user!.id;
-        handoffObj.confirmedByRole = req.user!.role;
+      const now = new Date().toISOString();
+      const handoffObj = appRow.handoff_pack_json
+        ? (JSON.parse(appRow.handoff_pack_json) as Record<string, unknown>)
+        : {};
+      handoffObj.humanConfirmed = true;
+      handoffObj.humanConfirmedAt = now;
+      handoffObj.confirmedByActorId = req.user!.id;
+      handoffObj.confirmedByRole = req.user!.role;
 
-        const nextStatus: ApplicationStatus =
-          req.user!.role === 'CSC_OPERATOR' || req.user!.role === 'CITIZEN'
-            ? 'SUBMITTED'
-            : 'READY_FOR_HANDOFF';
+      const nextStatus: ApplicationStatus =
+        req.user!.role === 'CSC_OPERATOR' || req.user!.role === 'CITIZEN'
+          ? 'SUBMITTED'
+          : 'READY_FOR_HANDOFF';
 
-        await db.run(
-          `UPDATE applications SET
+      await db.run(
+        `UPDATE applications SET
             status = ?,
             human_confirmed = 1,
             human_confirmed_timestamp = ?,
             handoff_pack_json = ?,
             updated_at = ?
            WHERE id = ?`,
-          [nextStatus, now, JSON.stringify(handoffObj), now, appRow.id]
-        );
+        [nextStatus, now, JSON.stringify(handoffObj), now, appRow.id]
+      );
 
-        const updated = await db.get<ApplicationRow>('SELECT * FROM applications WHERE id = ?', [
-          appRow.id
-        ]);
-        await recordAuditLog(db, {
-          actorId: req.user!.id,
-          actorRole: req.user!.role,
-          action: 'APPLICATION_HUMAN_CONFIRMED',
-          entityType: 'APPLICATION',
-          entityId: appRow.id,
-          details: `Human Confirmation Gate completed (${nextStatus})`
-        });
+      const updated = await db.get<ApplicationRow>('SELECT * FROM applications WHERE id = ?', [
+        appRow.id
+      ]);
+      await recordAuditLog(db, {
+        actorId: req.user!.id,
+        actorRole: req.user!.role,
+        action: 'APPLICATION_HUMAN_CONFIRMED',
+        entityType: 'APPLICATION',
+        entityId: appRow.id,
+        details: `Human Confirmation Gate completed (${nextStatus})`
+      });
 
-        res.json({ application: rowToApplication(updated!) });
-      } catch (err) {
-        next(err);
-      }
+      res.json({ application: rowToApplication(updated!) });
+    } catch (err) {
+      next(err);
     }
-  );
+  });
 
   // Reviewer & Supervisor workflow decision (strictly blocked for CITIZEN and CSC_OPERATOR)
   router.patch(

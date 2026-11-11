@@ -105,27 +105,80 @@ export function detectPromptInjectionOrAutoSubmit(prompt: string): {
 }
 
 const HINDI_NUMBER_WORDS: Record<string, number> = {
-  एक: 1, दो: 2, तीन: 3, चार: 4, पांच: 5, पाँच: 5,
-  छह: 6, सात: 7, आठ: 8, नौ: 9, दस: 10,
-  अठारह: 18, उन्नीस: 19, बीस: 20, इक्कीस: 21, बाईस: 22,
-  तेईस: 23, चौबीस: 24, पच्चीस: 25, तीस: 30, पैंतीस: 35,
-  चालीस: 40, पैंतालीस: 45, पचास: 50, पचपन: 55,
-  छप्पन: 56, सत्तावन: 57, अट्ठावन: 58, उनसठ: 59,
-  साठ: 60, इकसठ: 61, बासठ: 62, बयासठ: 62, तिरेसठ: 63,
-  चौंसठ: 64, पैंसठ: 65, छियासठ: 66, सड़सठ: 67, अड़सठ: 68,
-  उनहत्तर: 69, सत्तर: 70, पचहत्तर: 75, अस्सी: 80,
-  पचासी: 85, नब्बे: 90,
-  pacpan: 55, unsath: 59, saath: 60, iksath: 61,
-  basath: 62, baasath: 62, bayasath: 62, painsath: 65, sattar: 70
+  एक: 1,
+  दो: 2,
+  तीन: 3,
+  चार: 4,
+  पांच: 5,
+  पाँच: 5,
+  छह: 6,
+  सात: 7,
+  आठ: 8,
+  नौ: 9,
+  दस: 10,
+  अठारह: 18,
+  उन्नीस: 19,
+  बीस: 20,
+  इक्कीस: 21,
+  बाईस: 22,
+  तेईस: 23,
+  चौबीस: 24,
+  पच्चीस: 25,
+  तीस: 30,
+  पैंतीस: 35,
+  चालीस: 40,
+  पैंतालीस: 45,
+  पचास: 50,
+  पचपन: 55,
+  छप्पन: 56,
+  सत्तावन: 57,
+  अट्ठावन: 58,
+  उनसठ: 59,
+  साठ: 60,
+  इकसठ: 61,
+  बासठ: 62,
+  बयासठ: 62,
+  तिरेसठ: 63,
+  चौंसठ: 64,
+  पैंसठ: 65,
+  छियासठ: 66,
+  सड़सठ: 67,
+  अड़सठ: 68,
+  उनहत्तर: 69,
+  सत्तर: 70,
+  पचहत्तर: 75,
+  अस्सी: 80,
+  पचासी: 85,
+  नब्बे: 90,
+  pacpan: 55,
+  unsath: 59,
+  saath: 60,
+  iksath: 61,
+  basath: 62,
+  baasath: 62,
+  bayasath: 62,
+  painsath: 65,
+  sattar: 70
 };
 
 export function parseHindiOrEnglishNumber(utterance: string): number | null {
   const devanagariMap: Record<string, string> = {
-    '०': '0', '१': '1', '२': '2', '३': '3', '४': '4',
-    '५': '5', '६': '6', '७': '7', '८': '8', '९': '9'
+    '०': '0',
+    '१': '1',
+    '२': '2',
+    '३': '3',
+    '४': '4',
+    '५': '5',
+    '६': '6',
+    '७': '7',
+    '८': '8',
+    '९': '9'
   };
   const normalized = [...utterance].map((ch) => devanagariMap[ch] ?? ch).join('');
-  const tokens = normalized.toLowerCase().split(/[\s,।.?]+/).filter(Boolean);
+  const tokens = normalized
+    .toLowerCase()
+    .split(/[\s,।.?]+/)
+    .filter(Boolean);
   for (const token of tokens) {
     if (token in HINDI_NUMBER_WORDS) {
       return HINDI_NUMBER_WORDS[token];

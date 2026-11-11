@@ -69,8 +69,7 @@ export const SEEDED_SCHEMES: GovernmentScheme[] = [
         alternativesHi: 'तहसीलदार द्वारा जारी पट्टा या दाखिल-खारिज प्रमाण पत्र',
         howToObtainEn:
           'Download from your State Bhulekh portal or visit the nearest Tehsil / CSC center.',
-        howToObtainHi:
-          'अपने राज्य के भूलेख पोर्टल से डाउनलोड करें या नजदीकी तहसील / जन सेवा केंद्र (CSC) जाएं।'
+        howToObtainHi: 'अपने राज्य के भूलेख पोर्टल से डाउनलोड करें या नजदीकी तहसील / जन सेवा केंद्र (CSC) जाएं।'
       },
       {
         id: 'doc_bank_passbook',
@@ -85,8 +84,7 @@ export const SEEDED_SCHEMES: GovernmentScheme[] = [
       },
       {
         id: 'doc_identity_card',
-        nameEn:
-          'Government Voter ID / Kisan Credit Card / Ration Card (No Aadhaar stored in app)',
+        nameEn: 'Government Voter ID / Kisan Credit Card / Ration Card (No Aadhaar stored in app)',
         nameHi: 'मतदाता पहचान पत्र / किसान क्रेडिट कार्ड / राशन कार्ड (ऐप में आधार संग्रहीत नहीं किया जाता)',
         mandatory: true,
         alternativesEn: 'PAN Card, Driving License, or MGNREGA Job Card',
@@ -148,7 +146,8 @@ export const SEEDED_SCHEMES: GovernmentScheme[] = [
           field: 'annualIncome',
           operator: 'LTE',
           targetValue: 60000,
-          descriptionEn: 'Annual household income within illustrative threshold (with state overrides)',
+          descriptionEn:
+            'Annual household income within illustrative threshold (with state overrides)',
           descriptionHi: 'वार्षिक पारिवारिक आय निर्धारित सीमा के भीतर होनी चाहिए'
         }
       ]
@@ -178,7 +177,8 @@ export const SEEDED_SCHEMES: GovernmentScheme[] = [
         nameEn: 'BPL Ration Card / SECC-2011 BPL Listing Certificate',
         nameHi: 'बीपीएल (BPL) राशन कार्ड / बीपीएल सूची प्रमाण पत्र',
         mandatory: true,
-        alternativesEn: 'Antyodaya Anna Yojana (AAY) Card or State Social Welfare Income/BPL Certificate',
+        alternativesEn:
+          'Antyodaya Anna Yojana (AAY) Card or State Social Welfare Income/BPL Certificate',
         alternativesHi: 'अंत्योदय अन्न योजना कार्ड या समाज कल्याण विभाग का प्रमाण पत्र',
         howToObtainEn: 'Issued by Block Development Officer (BDO) or Food & Civil Supplies office.',
         howToObtainHi: 'खंड विकास अधिकारी (BDO) या खाद्य एवं रसद विभाग कार्यालय से प्राप्त करें।'
@@ -190,7 +190,8 @@ export const SEEDED_SCHEMES: GovernmentScheme[] = [
         mandatory: true,
         alternativesEn: 'Post Office Savings Account Passbook',
         alternativesHi: 'डाकघर बचत खाता पासबुक',
-        howToObtainEn: 'Open a zero-balance Jan Dhan account at any nationalized bank or Post Office.',
+        howToObtainEn:
+          'Open a zero-balance Jan Dhan account at any nationalized bank or Post Office.',
         howToObtainHi: 'किसी भी राष्ट्रीयकृत बैंक या डाकघर में जन-धन खाता खुलवाएं।'
       }
     ],
@@ -200,8 +201,7 @@ export const SEEDED_SCHEMES: GovernmentScheme[] = [
       '1. ग्रामीण क्षेत्र में खंड विकास अधिकारी (BDO) कार्यालय या शहरी क्षेत्र में समाज कल्याण कार्यालय / राज्य पेंशन पोर्टल पर आवेदन करें।\n2. बीपीएल प्रमाण और आयु प्रमाण संलग्न करें।',
     cscOfficeGuidanceEn:
       'Visit your Gram Panchayat Secretary, Block Social Welfare Officer, or nearest CSC.',
-    cscOfficeGuidanceHi:
-      'ग्राम पंचायत सचिव, समाज कल्याण अधिकारी या नजदीकी जन सेवा केंद्र (CSC) से मिलें।'
+    cscOfficeGuidanceHi: 'ग्राम पंचायत सचिव, समाज कल्याण अधिकारी या नजदीकी जन सेवा केंद्र (CSC) से मिलें।'
   },
   {
     id: 'PMUY',
@@ -306,8 +306,7 @@ export const SEEDED_SCHEMES: GovernmentScheme[] = [
       '1. pmuy.gov.in पर ऑनलाइन आवेदन करें और नजदीकी इंडेन, भारतगैस या एचपी गैस एजेंसी चुनें।\n2. या राशन कार्ड और बैंक पासबुक लेकर नजदीकी एलपीजी वितरक कार्यालय जाएं।',
     cscOfficeGuidanceEn:
       'Visit any authorized Indane / HP / Bharatgas agency or Common Service Centre (CSC).',
-    cscOfficeGuidanceHi:
-      'किसी भी अधिकृत गैस एजेंसी या नजदीकी जन सेवा केंद्र (CSC) पर संपर्क करें।'
+    cscOfficeGuidanceHi: 'किसी भी अधिकृत गैस एजेंसी या नजदीकी जन सेवा केंद्र (CSC) पर संपर्क करें।'
   },
   {
     id: 'PM-JAY',

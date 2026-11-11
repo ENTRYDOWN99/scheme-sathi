@@ -1,7 +1,7 @@
 {
   "name": "scheme-saathi-backend",
   "version": "1.0.0",
-  "description": "Shared REST API, deterministic eligibility engine, AI gateway, RBAC, and Firestore rules for Scheme Saathi",
+  "description": "Shared REST API, deterministic eligibility engine, AI gateway, and RBAC for Scheme Saathi",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,8 +12,8 @@
     "seed": "tsx src/db/seed.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:rules": "firebase emulators:exec --only firestore \"node --test tests/firestore.test.js\"",
     "lint": "eslint src tests",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\""
   },
   "dependencies": {
@@ -31,7 +31,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.20.0",
-    "@firebase/rules-unit-testing": "^3.0.3",
     "@types/cookie-parser": "^1.4.8",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
@@ -42,7 +41,6 @@
     "@types/supertest": "^6.0.2",
     "@types/swagger-ui-express": "^4.1.7",
     "eslint": "^9.20.0",
-    "firebase-tools": "^13.29.1",
     "prettier": "^3.5.0",
     "supertest": "^7.0.0",
     "tsx": "^4.19.2",

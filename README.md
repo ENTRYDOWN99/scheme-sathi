@@ -6,7 +6,7 @@
 [![Next.js](https://img.shields.io/badge/Web_PWA-Next.js_15-000000?style=flat&logo=nextdotjs&logoColor=white)](https://nextjs.org)
 [![Express](https://img.shields.io/badge/Backend-Express_TypeScript-3178C6?style=flat&logo=express&logoColor=white)](https://expressjs.com)
 [![Kotlin](https://img.shields.io/badge/Language-Kotlin_2.2.10-7F52FF?style=flat&logo=kotlin&logoColor=white)](https://kotlinlang.org)
-[![Firebase](https://img.shields.io/badge/Firebase-Auth_|_Firestore_|_App_Check-FFCA28?style=flat&logo=firebase&logoColor=black)](https://firebase.google.com)
+[![Firebase](https://img.shields.io/badge/Firebase-Auth_|_App_Check_|_AI-FFCA28?style=flat&logo=firebase&logoColor=black)](https://firebase.google.com)
 [![Gemini](https://img.shields.io/badge/AI-Firebase_AI_SDK_%26_Gemini-8E75C2?style=flat&logo=google&logoColor=white)](https://firebase.google.com/docs/ai)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -40,7 +40,7 @@
 >   copy app\google-services.json.example app\google-services.json
 >   .\gradlew.bat assembleDebug
 >   ```
->   ⚠️ When building with `app/google-services.json.example`, the APK compiles cleanly and works with the deterministic rule engine, offline fallback chat, Room cache, and local REST API (`http://10.0.2.2:4000/api/v1`), while **live Google Sign-In and Cloud Firestore will NOT authenticate** because Google Play Services and **Firebase App Check** require a registered SHA-1 and Firebase project.
+>   ⚠️ When building with `app/google-services.json.example`, the APK compiles cleanly and works with the deterministic rule engine, offline fallback chat, Room cache, and local REST API (`http://10.0.2.2:4000/api/v1`), while **live Google Sign-In and Firebase AI/App Check calls will NOT authenticate** because Google Play Services and **Firebase App Check** require a registered SHA-1 and Firebase project.
 
 ---
 
@@ -78,14 +78,14 @@ flowchart TD
     end
 
     subgraph Cloud ["Optional Firebase & Gemini Services"]
-        FB["Firebase Auth / Firestore / App Check"]
+        FB["Firebase Auth / App Check"]
         GEM["Gemini Models\n(Firebase AI SDK & Server Key)"]
     end
 
     WEB --> SH
     WEB -->|httpOnly JWT Cookie| API
     AND -->|OkHttp Bearer JWT| API
-    AND <-->|Sync & Grounded AI| FB
+    AND <-->|Auth & AI SDK| FB
     FB --> GEM
     API --> ENG
     API --> DB
@@ -150,12 +150,12 @@ flowchart TD
 ## 🛡️ Security & Privacy Architecture
 
 1. **No Aadhaar Number Collection/Storage**:
-   - Blocked in UI/input forms, regex-rejected at REST middleware (`noAadhaarMiddleware` returning `400 NO_AADHAAR_POLICY`), and rejected in Cloud Firestore (`backend/firestore.rules` `incoming().keys().hasOnly([...])`).
+   - Blocked in UI/input forms and regex-rejected at REST middleware (`noAadhaarMiddleware` returning `400 NO_AADHAAR_POLICY`).
 2. **AES-256-GCM PII Encryption & Minimal Logging**:
    - **Android (`SecurityUtils.kt`)**: Per-user key via SHA-256 over `"scheme-saathi-vault-v1:$userId"`, `AES/GCM/NoPadding`, unique 12-byte `SecureRandom` IV, 128-bit auth tag.
    - **Backend (`backend/src/security/crypto.ts`)**: AES-256-GCM encryption for stored `fullName`, `phone`, `dob`, validated against a 64-hex `PII_ENCRYPTION_KEY` in production.
    - **Token Storage**: Web uses `httpOnly` session cookies; Android stores backend JWTs in **Android Keystore (`TokenStore.kt`)**.
-   - **Log Hygiene (`FirestoreErrorHandler.kt`)**: PII (`userId`, `email`, raw exception strings) redacted before `Log.e`.
+   - **Log Hygiene (`BackendApiClient.kt` & `SchemeSaathiAiService.kt`)**: Errors are logged cleanly without emitting citizen PII (`userId`, `email`, raw tokens).
 3. **LLM PII Redaction (`SecurityUtils.kt` & `backend/src/security/piiGuard.ts`)**:
    - Strips citizen names, phone numbers (`[6-9]\d{9}`), Aadhaar patterns (`\d{4}[\s-]?\d{4}[\s-]?\d{4}`), and bank accounts before sending prompts to Gemini.
 4. **Firebase App Check (`AppCheckInitializer.kt`)**:
@@ -197,7 +197,7 @@ When `/backend` is running (default `http://localhost:4000`):
 - **Backend (`/backend`)**: Node.js, TypeScript 5.7, Express 4.21, Zod 3.24, JWT (`jsonwebtoken`), SQLite (`node:sqlite`) & PostgreSQL 16 (`pg`), Swagger UI, Vitest, Supertest.
 - **Web PWA (`/web`)**: Next.js 15.3 (App Router, standalone output), React 19, TypeScript 5.8, Tailwind CSS v4, Lucide Icons, PWA manifest & service worker, Playwright E2E.
 - **Shared (`/shared`)**: Design tokens (`tokens.json` / `tokens.css`), bilingual EN/HI dictionaries, typed TypeScript API client (`shared/api-client/index.ts`).
-- **Android (`/app`)**: Kotlin 2.2.10, AGP 9.1.1, Jetpack Compose Material 3, compileSdk 36 / targetSdk 36 / minSdk 24, Room offline cache, OkHttp, Android Keystore, CredentialManager + Firebase Auth, Cloud Firestore, Firebase App Check, Firebase AI SDK.
+- **Android (`/app`)**: Kotlin 2.2.10, AGP 9.1.1, Jetpack Compose Material 3, compileSdk 36 / targetSdk 36 / minSdk 24, Room offline cache, OkHttp (`BackendApiClient`), Android Keystore, CredentialManager + Firebase Auth, Firebase App Check, Firebase AI SDK.
 
 ---
 
@@ -205,13 +205,13 @@ When `/backend` is running (default `http://localhost:4000`):
 
 | Suite | Command | Latest Observed Result |
 |---|---|---|
-| **Backend Lint & Type Build** | `cd backend && npm run lint && npm run build` | **PASS** (0 lint errors/warnings, `dist/` built cleanly) |
+| **Backend Lint, Format & Type Build** | `cd backend && npm run lint && npm run format:check && npm run build` | **PASS** (0 lint errors/warnings, Prettier clean, `dist/` built cleanly) |
 | **Backend Unit & API Integration** | `cd backend && npm test` | **PASS** (`2` files, `15 passed`: `eligibility.test.ts` 9 + `api.integration.test.ts` 6) |
 | **Shared Types Check** | `backend\node_modules\.bin\tsc.cmd -p shared\tsconfig.json` | **PASS** (exit code 0) |
 | **Web PWA Lint & Build** | `cd web && npm run lint && npm run build` | **PASS** (0 ESLint errors/warnings; 11 routes built cleanly) |
-| **Web E2E (Playwright Chromium)** | `cd web && npm run test:e2e` | **PASS** (`1 passed` full flow: catalog, EN/HI switch, login, DOB validation, profile, 3-checkbox Handoff Pack, AI block, Reviewer RBAC approval) |
-| **Android Build & JVM/Robolectric Tests** | `.\gradlew.bat assembleDebug testDebugUnitTest --tests "com.example.Phase5ParityTest" --tests "com.example.util.DateUtilsTest" --tests "com.example.ExampleUnitTest" --tests "com.example.ExampleRobolectricTest"` | **PASS** (`17 passed`: `DateUtilsTest` 13, `Phase5ParityTest` 2, `ExampleUnitTest` 1, `ExampleRobolectricTest` 1) |
-| **Android & Firestore Emulator Rules** | `cd backend && npm run test:rules` and `SchemeSaathiRepositoryRuleTest` | **Emulator-dependent** (not executed in local CI run because Firebase Emulator Java runtime for `127.0.0.1:8085` is not started automatically) |
+| **Web E2E & Axe Accessibility (Chromium)** | `cd web && npm run test:e2e` | **PASS** (`1 passed`: all 4 roles, OTP/password login failures, AI busy/network/generic error states, `hi`/`en` on all 8 routes, Human Confirmation Gate, and `@axe-core/playwright` WCAG 2.0/2.1 AA with 0 violations) |
+| **Android Full JVM/Robolectric & Compose Tests** | `.\gradlew.bat testDebugUnitTest` | **PASS** (`19 passed`, `0 failed`, `0 skipped`: `DateUtilsTest` 13, `Phase5ParityTest` 2, `ConfirmationGateComposeTest` 2, `ExampleUnitTest` 1, `ExampleRobolectricTest` 1) |
+| **Android Signed Release Bundle** | `.\gradlew.bat bundleRelease` + `jarsigner -verify` | **PASS** (`app/build/outputs/bundle/release/app-release.aab` signed cleanly with local upload keystore; self-signed/no-timestamp `jarsigner` warnings) |
 
 ---
 
@@ -236,16 +236,15 @@ saathi/
 │   │   ├── data/local/          # Room offline checklist cache (SchemeSaathiDatabase)
 │   │   ├── data/remote/         # OkHttp shared REST API client (BackendApiClient)
 │   │   ├── data/model/          # SchemeModels
-│   │   ├── data/repository/     # Firestore sync & redacted ErrorHandler
 │   │   ├── domain/              # Deterministic EligibilityEngine
 │   │   ├── security/            # Android Keystore JWT store (TokenStore)
 │   │   ├── ui/                  # Compose screens, ViewModel, Civic theme
 │   │   └── util/                # SecurityUtils, DateUtils, NotificationHelper, AppCheck
-│   └── src/test/java/           # Phase5ParityTest, DateUtilsTest, Robolectric & Unit tests
-├── backend/                     # Shared REST API, eligibility engine, SQL migrations & Firebase rules
+│   └── src/test/java/           # ConfirmationGateComposeTest, Phase5ParityTest, DateUtilsTest
+├── backend/                     # Shared REST API, eligibility engine & SQL migrations
 │   ├── src/                     # Express app, routes, crypto/piiGuard, SQLite/PG adapter
 │   ├── openapi.yaml             # OpenAPI 3.0 contract (served at /api/docs)
-│   ├── tests/                   # Vitest unit/integration tests + Firestore rules tests
+│   ├── tests/                   # Vitest unit/integration tests
 │   └── Dockerfile
 ├── web/                         # Responsive Next.js 15 PWA frontend
 │   ├── src/app/                 # Routes: /, /login, /profile, /chat, /apply, /alerts, /settings, /operator

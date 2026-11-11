@@ -21,10 +21,9 @@ export async function runMigrations(db: DatabaseClient): Promise<string[]> {
   );
 
   for (const file of files) {
-    const existing = await db.get<{ id: string }>(
-      'SELECT id FROM schema_migrations WHERE id = ?',
-      [file]
-    );
+    const existing = await db.get<{ id: string }>('SELECT id FROM schema_migrations WHERE id = ?', [
+      file
+    ]);
     if (existing) {
       continue;
     }
@@ -45,7 +44,10 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename
   const db = createDatabase();
   runMigrations(db)
     .then(async (applied) => {
-      console.info('[migrate] applied:', applied.length > 0 ? applied.join(', ') : 'none (up to date)');
+      console.info(
+        '[migrate] applied:',
+        applied.length > 0 ? applied.join(', ') : 'none (up to date)'
+      );
       await db.close();
     })
     .catch(async (err) => {

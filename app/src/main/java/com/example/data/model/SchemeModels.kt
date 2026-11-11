@@ -2,15 +2,10 @@ package com.example.data.model
 
 import com.example.util.DateUtils
 import com.example.util.SecurityUtils
-import com.google.firebase.Timestamp
-import com.google.firebase.firestore.DocumentId
-import com.google.firebase.firestore.IgnoreExtraProperties
-import com.google.firebase.firestore.ServerTimestamp
 import java.util.Calendar
 
-@IgnoreExtraProperties
 data class CitizenProfile(
-    @DocumentId val id: String = "",
+    val id: String = "",
     val userId: String = "",
     val encryptedName: String = "",
     val encryptedPhone: String = "",
@@ -33,8 +28,8 @@ data class CitizenProfile(
     val consentGranted: Boolean = false,
     val preferredLanguage: String = "hi", // hi, en
     val role: String = "CITIZEN", // CITIZEN, CSC_OPERATOR, SUPERVISOR, REVIEWER
-    @ServerTimestamp val createdAt: Timestamp? = null,
-    @ServerTimestamp val updatedAt: Timestamp? = null
+    val createdAtMillis: Long = 0L,
+    val updatedAtMillis: Long = 0L
 ) {
     /**
      * Resolves citizen age with accurate birthday calculation from encryptedDob when present.
@@ -54,9 +49,8 @@ data class CitizenProfile(
     }
 }
 
-@IgnoreExtraProperties
 data class SchemeApplication(
-    @DocumentId val id: String = "",
+    val id: String = "",
     val userId: String = "",
     val schemeId: String = "",
     val schemeName: String = "",
@@ -72,13 +66,12 @@ data class SchemeApplication(
     val checklistSummary: String = "",
     val snapshotHash: String = "",
     val explicitCitizenConfirmed: Boolean = false,
-    @ServerTimestamp val createdAt: Timestamp? = null,
-    @ServerTimestamp val updatedAt: Timestamp? = null
+    val createdAtMillis: Long = 0L,
+    val updatedAtMillis: Long = 0L
 )
 
-@IgnoreExtraProperties
 data class CollaborativeTask(
-    @DocumentId val id: String = "",
+    val id: String = "",
     val userId: String = "",
     val title: String = "",
     val description: String = "",
@@ -91,8 +84,8 @@ data class CollaborativeTask(
     val deliveryChannel: String = "IN_APP", // IN_APP, SMS_MOCK
     val deliveryStatus: String = "SCHEDULED", // SCHEDULED, DELIVERED, RETRY_1M, CANCELLED
     val activityLogSummary: String = "",
-    @ServerTimestamp val createdAt: Timestamp? = null,
-    @ServerTimestamp val updatedAt: Timestamp? = null
+    val createdAtMillis: Long = 0L,
+    val updatedAtMillis: Long = 0L
 )
 
 enum class EligibilityOutcome {

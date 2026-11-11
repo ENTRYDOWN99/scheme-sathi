@@ -138,7 +138,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               onClick={() => setLanguage(language === 'hi' ? 'en' : 'hi')}
-              aria-label="Toggle language Hindi or English"
+              title="Toggle language Hindi or English"
               className="px-3 py-2 rounded-xl text-xs font-bold border cursor-pointer"
               style={{
                 borderColor: 'var(--saathi-outline)',
@@ -146,6 +146,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               }}
             >
               {language === 'hi' ? 'EN' : 'हिन्दी'}
+              <span className="sr-only"> Toggle language</span>
             </button>
 
             {user ? (

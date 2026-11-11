@@ -49,10 +49,7 @@ export function parseDob(dobStr: string): ParsedDob | null {
   };
 }
 
-export function calculateAge(
-  dobStr: string,
-  refDate: Date = new Date()
-): number {
+export function calculateAge(dobStr: string, refDate: Date = new Date()): number {
   const parsed = parseDob(dobStr);
   if (!parsed) return -1;
   if (parsed.month < 1 || parsed.month > 12) return -1;
@@ -70,10 +67,7 @@ export function calculateAge(
   return age;
 }
 
-export function validateDob(
-  dobStr: string,
-  refDate: Date = new Date()
-): DobValidationStatus {
+export function validateDob(dobStr: string, refDate: Date = new Date()): DobValidationStatus {
   const trimmed = dobStr.trim();
   if (!trimmed || trimmed.length < 10) return 'INCOMPLETE';
   const parsed = parseDob(trimmed);

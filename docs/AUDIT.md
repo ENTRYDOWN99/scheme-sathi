@@ -149,3 +149,21 @@ saathi/
   - DPDP Consent Gate + `GET /api/v1/profile/export` (JSON download) + `DELETE /api/v1/profile` (full erasure).
 - **Human Confirmation Gate Invariant**:
   - `POST /api/v1/applications/:id/confirm` verifies the submitted `snapshotHash` against server-computed SHA-256 of the stored draft + checklist and requires `explicitCitizenConfirmed === true` and `uncertainAcknowledged === true`. AI service has **no** submission tool and only calls deterministic endpoints.
+
+---
+
+## 5. Verification & Hardening Pass — Android Firebase/Firestore Migration Audit
+
+### 5.1 Screen & Layer Grep Summary (`app/`)
+- **Compose Screens (`app/src/main/java/com/example/ui/screens/*.kt`)**: **0 screens** import `FirebaseFirestore` or call Cloud Firestore directly; all 15 Compose screens delegate state and actions exclusively to `SchemeSaathiViewModel`.
+- **ViewModel & Entrypoint Migration (`MainActivity.kt`, `SchemeSaathiViewModel.kt`, `SchemeModels.kt`, `BackendApiClient.kt`)**:
+  - Removed `FirebaseFirestore`, `SchemeSaathiRepository.kt`, `FirestoreErrorHandler.kt`, `@DocumentId`/`@IgnoreExtraProperties`/`@ServerTimestamp`/`com.google.firebase.Timestamp` annotations, and `libs.firebase.firestore`.
+  - Migrated profile read/write/delete, application creation/confirmation/review, checklist sync, and collaborative task CRUD directly to `BackendApiClient` (`/api/v1/*`) paired with local reactive state and Room offline checklist persistence (`SchemeSaathiDatabase`).
+  - Deleted obsolete Firestore emulator tests (`app/src/test/java/com/example/base/FirestoreEmulatorTestBase.kt`, `app/src/test/java/com/example/data/repository/SchemeSaathiRepositoryRuleTest.kt`, and `backend/tests/firestore.test.js`) along with unused `@firebase/rules-unit-testing` / `firebase-tools` backend devDependencies.
+
+### 5.2 Justified Remaining Firebase SDK Exceptions (Non-Firestore)
+1. **Google Sign-In Gate (`FirebaseAuth` + Jetpack Credential Manager in `MainActivity.kt` & `ui/auth/AuthComponents.kt`)**:
+   - Retained solely to authenticate real Android users with their Google account before loading the workspace, avoiding custom password UI changes on mobile while backend role switching/sync runs cleanly through `BackendApiClient` (`TokenStore`).
+2. **Gemini Client SDK (`Firebase.ai` in `ai/SchemeSaathiAiService.kt` + `util/AppCheckInitializer.kt`)**:
+   - Retained intentionally so mobile streaming chat and live-voice script generation authenticate via Firebase App Check without embedding any Gemini API keys in Android source/Gradle/resources. Backend `/api/v1/ai/*` remains the unified gateway for Web PWA and server fallback.
+

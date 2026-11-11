@@ -22,6 +22,7 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
       - run: npm run lint
+      - run: npm run format:check
       - run: npm run build
       - run: npm test
 
@@ -53,7 +54,7 @@ jobs:
           java-version: 21
       - uses: gradle/actions/setup-gradle@v4
       - name: Prepare example google-services.json if absent
-        run: cp -n google-services.json.example google-services.json || true
-      - name: Run Android non-emulator unit tests & assembleDebug
-        run: ./gradlew assembleDebug testDebugUnitTest --tests "com.example.Phase5ParityTest" --tests "com.example.util.DateUtilsTest" --tests "com.example.ExampleUnitTest" --tests "com.example.ExampleRobolectricTest"
+        run: cp -n app/google-services.json.example app/google-services.json || true
+      - name: Run full Android unit/Compose tests & assembleDebug
+        run: ./gradlew assembleDebug testDebugUnitTest
 

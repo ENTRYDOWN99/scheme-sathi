@@ -45,7 +45,10 @@ export function classifyAiError(err: unknown): AiErrorCategory {
   return 'generic';
 }
 
-export function getFriendlyAiErrorMessage(category: AiErrorCategory, language: LanguageCode): string {
+export function getFriendlyAiErrorMessage(
+  category: AiErrorCategory,
+  language: LanguageCode
+): string {
   if (language === 'hi') {
     switch (category) {
       case 'busy':
@@ -109,7 +112,9 @@ export function buildDeterministicChatSummary(
         `अतिरिक्त जानकारी आवश्यक: ${unknown.map((r) => schemeName(r.schemeId)).join(', ')}।`
       );
     }
-    parts.push('यह केवल प्रारंभिक मार्गदर्शन है; अंतिम निर्णय संबंधित सरकारी पोर्टल या कार्यालय द्वारा किया जाएगा।');
+    parts.push(
+      'यह केवल प्रारंभिक मार्गदर्शन है; अंतिम निर्णय संबंधित सरकारी पोर्टल या कार्यालय द्वारा किया जाएगा।'
+    );
     return { summaryText: parts.join('\n\n'), groundingContext };
   }
 

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Mic, Send, Volume2, ShieldAlert } from 'lucide-react';
+import { ApiClientError } from '@shared/api-client';
 import { useSaathi } from '@/context/SaathiProvider';
 import { apiClient } from '@/lib/api';
 
@@ -64,12 +65,23 @@ export default function ChatPage() {
         }
       ]);
     } catch (err) {
+      let friendly = t.aiErrors.generic;
+      if (err instanceof ApiClientError) {
+        if (err.status === 429) {
+          friendly = t.aiErrors.busy;
+        } else if (err.status === 502 || err.status === 503 || err.status === 504) {
+          friendly = t.aiErrors.network;
+        }
+      } else if (err instanceof TypeError) {
+        friendly = t.aiErrors.network;
+      }
       setMessages((prev) => [
         ...prev,
         {
           id: `e_${Date.now()}`,
           sender: 'assistant',
-          text: err instanceof Error ? err.message : t.aiErrors.generic
+          text: friendly,
+          meta: friendly
         }
       ]);
     } finally {
@@ -174,10 +186,9 @@ export default function ChatPage() {
                   <button
                     type="button"
                     onClick={() => speakText(m.text)}
-                    aria-label="Listen"
                     className="inline-flex items-center gap-1 font-semibold cursor-pointer"
                   >
-                    <Volume2 className="w-3.5 h-3.5" />
+                    <Volume2 className="w-3.5 h-3.5" aria-hidden="true" />
                     <span>{language === 'hi' ? 'सुनें' : 'Speak'}</span>
                   </button>
                 </div>
@@ -198,6 +209,7 @@ export default function ChatPage() {
           type="text"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
+          aria-label={language === 'hi' ? 'अपना योजना प्रश्न लिखें' : 'Ask a scheme question'}
           placeholder={
             language === 'hi'
               ? 'अपना प्रश्न लिखें या माइक दबाएं...'

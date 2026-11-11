@@ -54,7 +54,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.credentials.CredentialManager
-import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -63,7 +62,6 @@ import com.example.data.local.SchemeSaathiDatabase
 import com.example.data.model.CollaborativeTask
 import com.example.data.model.SchemeApplication
 import com.example.data.remote.BackendApiClient
-import com.example.data.repository.SchemeSaathiRepository
 import com.example.security.TokenStore
 import com.example.util.NotificationHelper
 import com.example.ui.auth.attemptAutoSignIn
@@ -93,7 +91,6 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.auth
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -186,25 +183,11 @@ fun SchemeSaathiRootApp() {
                 key = uid,
                 factory = viewModelFactory {
                     initializer {
-                        val app = checkNotNull(this[APPLICATION_KEY]) {
-                            "APPLICATION_KEY missing from CreationExtras"
-                        }
-                        val databaseId = try {
-                            app.getString(R.string.firestore_database_id)
-                        } catch (e: Exception) {
-                            "(default)"
-                        }
-                        val db = try {
-                            FirebaseFirestore.getInstance(databaseId)
-                        } catch (e: Exception) {
-                            FirebaseFirestore.getInstance()
-                        }
                         val appContext = context.applicationContext
                         val localDb = SchemeSaathiDatabase.getInstance(appContext)
                         val tokenStore = TokenStore(appContext)
                         val backendClient = BackendApiClient(tokenStore)
                         SchemeSaathiViewModel(
-                            repository = SchemeSaathiRepository(db, FirebaseAuth.getInstance()),
                             currentUserId = uid,
                             localDb = localDb,
                             tokenStore = tokenStore,
@@ -247,7 +230,7 @@ fun AuthenticatedSchemeSaathiApp(
     val decryptedPhone by viewModel.decryptedPhone.collectAsStateWithLifecycle()
     val decryptedDob by viewModel.decryptedDob.collectAsStateWithLifecycle()
 
-    // Collect Firestore streams
+    // Collect reactive state streams (hydrated from shared REST API & Room cache)
     val profileUiState by viewModel.profileUiState.collectAsStateWithLifecycle()
     val applicationsUiState by viewModel.applicationsUiState.collectAsStateWithLifecycle()
     val tasksUiState by viewModel.tasksUiState.collectAsStateWithLifecycle()
@@ -465,7 +448,7 @@ fun AuthenticatedSchemeSaathiApp(
                     }
                 }
 
-                // Surface any Firestore error state transparently
+                // Surface any backend sync error state transparently
                 if (profileUiState is DataUiState.Error) {
                     val err = (profileUiState as DataUiState.Error).message
                     Surface(

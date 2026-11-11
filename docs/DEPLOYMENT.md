@@ -2,87 +2,138 @@
 
 > **Disclaimer**: SchemeSaathi is NOT an official government application. All scheme rules are informational guidance only; final eligibility and benefits rest solely with the issuing government authority.
 
-## 1. Architecture Overview
+---
+
+## 1. Architecture & Required Production Secrets
 
 One unified backend (`/backend`) powers both clients:
-- **Backend (`/backend`)**: Node.js 24 + Express + TypeScript + SQLite (zero-config local/dev) or PostgreSQL 16 (production), serving `/api/v1/*`, Swagger UI (`/api/docs`), OpenAPI 3.0 spec (`/api/openapi.json`), and `/health`.
-- **Web PWA (`/web`)**: Next.js 15 App Router + TypeScript + Tailwind CSS (`output: 'standalone'`), communicating with `/api/v1` via `httpOnly` JWT cookies.
-- **Android Mobile App (`/app`)**: Native Kotlin + Jetpack Compose (`minSdk 24`, `targetSdk 36`), communicating with `/api/v1` via OkHttp (`BuildConfig.API_BASE_URL`), storing JWTs in **Android Keystore (`TokenStore`)**, caching document checklists offline in **Room (`SchemeSaathiDatabase`)**, and dispatching local notifications (`NotificationHelper`).
+- **Backend (`/backend`)**: Node.js 24 + Express + TypeScript (`sqlite:` in dev/local, `postgresql://` / PostgreSQL 16 in production), serving `/api/v1/*`, Swagger UI (`/api/docs`), OpenAPI 3.0 spec (`/api/openapi.json`), and `/health`.
+- **Web PWA (`/web`)**: Next.js 15 App Router + TypeScript + Tailwind CSS (`output: 'standalone'`), connecting to `NEXT_PUBLIC_API_URL`.
+- **Android Mobile App (`/app`)**: Native Kotlin + Jetpack Compose (`minSdk 24`, `targetSdk 36`), connecting to `BuildConfig.API_BASE_URL` with Android Keystore JWT (`TokenStore`) and Room offline checklist persistence (`SchemeSaathiDatabase`).
 
----
-
-## 2. Production Docker Compose Deployment (PostgreSQL + Backend + Web)
-
-1. Configure production secrets in `.env` at repository root:
-   ```env
-   POSTGRES_PASSWORD=strong-random-db-password
-   JWT_SECRET=<at-least-32-character-random-secret>
-   JWT_REFRESH_SECRET=<at-least-32-character-different-random-secret>
-   PII_ENCRYPTION_KEY=<64-hex-character-aes-256-key>
-   CORS_ORIGIN=https://your-domain.example
-   NEXT_PUBLIC_API_URL=https://api.your-domain.example/api/v1
-   GEMINI_API_KEY=<your-gemini-api-key>
-   ```
-   > **Security**: The backend refuses to boot in `NODE_ENV=production` if `JWT_SECRET` / `JWT_REFRESH_SECRET` are `< 32` characters or if `PII_ENCRYPTION_KEY` is not 64 hex chars.
-
-2. Launch all three services with automatic PostgreSQL migrations & seeding:
-   ```bash
-   docker compose up --build -d
-   ```
-
-3. Verify health:
-   ```bash
-   curl -f http://localhost:4000/health
-   # Web UI at http://localhost:3000
-   # Swagger OpenAPI docs at http://localhost:4000/api/docs
-   ```
-
----
-
-## 3. Manual Bare-Metal / VM Deployment
-
-### Backend (`/backend`)
+### Generate Mandatory Production Secrets (`NODE_ENV=production`)
+The backend refuses to start in `NODE_ENV=production` unless all three secrets meet strict requirements in [env.ts](../backend/src/config/env.ts):
 ```bash
-cd backend
-npm ci
-npm run build
-NODE_ENV=production npm run migrate
-NODE_ENV=production npm run seed
-NODE_ENV=production npm start
-```
+# 32+ character secrets for JWT access & refresh signing:
+openssl rand -base64 36   # -> JWT_SECRET
+openssl rand -base64 36   # -> JWT_REFRESH_SECRET
 
-### Web PWA (`/web`)
-```bash
-cd web
-npm ci
-NEXT_PUBLIC_API_URL=https://api.your-domain.example/api/v1 npm run build
-NODE_ENV=production npm start
+# Exactly 64 hex characters (32 bytes) for AES-256-GCM PII encryption:
+openssl rand -hex 32      # -> PII_ENCRYPTION_KEY
 ```
 
 ---
 
-## 4. Android Build & Play Store Release
+## 2. Backend Deployment (`/backend`)
 
-1. **Google Services Config**: Copy your real `google-services.json` to repository root (or `google-services.json.example` for offline/REST-only builds).
-2. **Backend Endpoint Injection**: Pass `API_BASE_URL` cleanly via environment or Gradle property:
-   - Emulator connecting to host machine: `http://10.0.2.2:4000/api/v1` (default)
-   - Production HTTPS endpoint:
-     ```bash
-     API_BASE_URL=https://api.your-domain.example/api/v1 ./gradlew assembleRelease
-     ```
-3. **Upload Keystore Environment Variables** (never commit `.jks`/`.keystore` files):
-   ```env
-   KEYSTORE_PATH=/path/to/my-upload-key.jks
-   STORE_PASSWORD=...
-   KEY_PASSWORD=...
-   ```
-4. **Build Signed App Bundle (`.aab`)**:
+### Option A: Render (Web Service + Managed PostgreSQL)
+1. In the Render Dashboard, create a **PostgreSQL** instance and copy its **Internal/External Database URL**.
+2. Create a **New Web Service** connected to your GitHub repo:
+   - **Root Directory**: `backend`
+   - **Runtime**: Node (or Docker using `backend/Dockerfile`)
+   - **Build Command**: `npm ci && npm run build`
+   - **Pre-Deploy / Release Command**: `npm run migrate && npm run seed`
+   - **Start Command**: `npm start`
+   - **Health Check Path**: `/health`
+3. Add **Environment Variables**:
+   - `NODE_ENV=production`
+   - `PORT=4000` (or leave default `PORT` provided by Render)
+   - `DATABASE_URL=<Render PostgreSQL URL>`
+   - `JWT_SECRET=<generated>`
+   - `JWT_REFRESH_SECRET=<generated>`
+   - `PII_ENCRYPTION_KEY=<64-hex>`
+   - `CORS_ORIGIN=https://your-vercel-app.vercel.app`
+   - `GEMINI_API_KEY=<optional server key>`
+4. Deploy and verify `https://<your-render-service>.onrender.com/health` and `/api/docs`.
+
+### Option B: Railway (PostgreSQL + Backend Service)
+1. Create a new Railway project and add a **PostgreSQL** database plugin.
+2. Add a **GitHub Service** pointing to this repo with Root Directory `/` and Dockerfile Path `backend/Dockerfile` (or set Root Directory `backend`, Build `npm ci && npm run build`, Start `sh -c "npm run migrate && npm run seed && npm start"`).
+3. Link `${{Postgres.DATABASE_URL}}` as `DATABASE_URL`, set `NODE_ENV=production`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `PII_ENCRYPTION_KEY`, `CORS_ORIGIN`, and optional `GEMINI_API_KEY`.
+4. Generate a Railway public domain under **Settings → Networking** and verify `/health`.
+
+### Option C: Google Cloud Run (Container + Cloud SQL PostgreSQL)
+1. Enable **Cloud Run**, **Artifact Registry**, and **Cloud SQL** in your GCP project.
+2. Build and push the backend image from repo root:
    ```bash
-   ./gradlew bundleRelease
-   # Output: app/build/outputs/bundle/release/app-release.aab
+   gcloud builds submit --config=- . <<'EOF'
+   steps:
+     - name: 'gcr.io/cloud-builders/docker'
+       args: ['build', '-f', 'backend/Dockerfile', '-t', 'gcr.io/PROJECT_ID/saathi-backend:latest', '.']
+   images: ['gcr.io/PROJECT_ID/saathi-backend:latest']
+   EOF
    ```
-5. **Pre-Release Checklist**:
-   - Confirm `google-services.json` includes release SHA-1 & SHA-256 fingerprints.
-   - Verify Firebase App Check reCAPTCHA / Play Integrity enforcement in Firebase Console.
-   - Confirm `network_security_config.xml` only allows cleartext for local emulator/localhost testing; production calls must use `https://`.
+3. Run database migrations/seed against your Cloud SQL instance (via Cloud SQL Auth Proxy), then deploy to Cloud Run:
+   ```bash
+   gcloud run deploy saathi-backend \
+     --image gcr.io/PROJECT_ID/saathi-backend:latest \
+     --platform managed \
+     --region asia-south1 \
+     --allow-unauthenticated \
+     --port 4000 \
+     --add-cloudsql-instances PROJECT_ID:asia-south1:saathi-pg \
+     --set-env-vars "NODE_ENV=production,CORS_ORIGIN=https://your-domain.com" \
+     --set-secrets "DATABASE_URL=saathi-db-url:latest,JWT_SECRET=saathi-jwt:latest,JWT_REFRESH_SECRET=saathi-jwt-ref:latest,PII_ENCRYPTION_KEY=saathi-pii-key:latest,GEMINI_API_KEY=saathi-gemini:latest"
+   ```
 
+### Option D: Local / VM Docker Compose
+```bash
+docker compose up --build -d
+# Checks Postgres health -> runs migrate & seed -> exposes Backend (:4000) and Web (:3000)
+curl -f http://localhost:4000/health
+```
+
+---
+
+## 3. Web PWA Deployment on Vercel (`/web`)
+
+> **Important Note on Cookies Across Domains**: Backend auth issues `httpOnly`, `SameSite=Lax`, `Secure` session cookies in production. For cross-subdomain deployment (`app.yourdomain.com` + `api.yourdomain.com`), use a shared custom domain or configure Vercel `rewrites` in `next.config.ts` to proxy `/api/v1/*` to your backend URL cleanly under the same origin.
+
+1. Go to **Vercel Dashboard → Add New Project** and import your GitHub repository.
+2. Configure **Project Settings → Build & Development**:
+   - **Root Directory**: `web` (Note: `web/next.config.ts` enables `experimental.externalDir` to import `shared/`, so ensure **Include source files outside of the Root Directory** is enabled in Vercel General Settings).
+   - **Framework Preset**: Next.js
+   - **Build Command**: `npm run build`
+3. Set **Environment Variables**:
+   - `NEXT_PUBLIC_API_URL=https://api.your-domain.example/api/v1` (or your Render/Railway/Cloud Run URL + `/api/v1`)
+4. Deploy and confirm:
+   - Update `CORS_ORIGIN` on the backend to include the exact `https://...vercel.app` (and custom domain) origin.
+   - Verify `/` renders the scheme catalog, `/login` authenticates cleanly, and `manifest.webmanifest` / `sw.js` load over HTTPS.
+
+---
+
+## 4. Android Build & Google Play Console Release (`/app`)
+
+### Step 1: Configure Upload Keystore & Firebase Config (Never Commit Secrets)
+1. Copy your live Firebase Android config to `app/google-services.json` (with release SHA-1 & SHA-256 fingerprints registered in Firebase Console).
+2. Generate a production upload keystore outside the repository (or verify with an ephemeral scratch keystore):
+   ```powershell
+   keytool -genkeypair -v -keystore C:\secure\my-upload-key.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000
+   ```
+   > Keep `.jks` / `.keystore` files **strictly outside Git** (`.gitignore` excludes `*.jks`, `*.keystore`).
+
+### Step 2: Build Signed Release `.aab`
+`app/build.gradle.kts` reads `KEYSTORE_PATH`, `STORE_PASSWORD`, `KEY_PASSWORD`, and `API_BASE_URL` directly from environment variables:
+```powershell
+$env:KEYSTORE_PATH = "C:\secure\my-upload-key.jks"
+$env:STORE_PASSWORD = "your-store-password"
+$env:KEY_PASSWORD = "your-key-password"
+$env:API_BASE_URL = "https://api.your-domain.example/api/v1"
+
+.\gradlew.bat bundleRelease
+# Output: app/build/outputs/bundle/release/app-release.aab
+
+# Verify AAB JAR signature:
+jarsigner -verify -verbose -certs app\build\outputs\bundle\release\app-release.aab
+```
+
+### Step 3: Publish in Google Play Console
+1. Open **Google Play Console → Create App** (`Scheme Saathi`, Default language Hindi or English, App type: App, Free).
+2. Complete **App Content** declarations:
+   - **Privacy Policy URL**: Host your privacy notice covering AES-256-GCM encryption, DPDP export/erasure, and the strict **No Aadhaar Collection** policy.
+   - **Government Apps Declaration**: Select **No** (SchemeSaathi is an independent non-official civic assistant; matches the in-app disclaimer).
+   - **Data Safety**: Declare encrypted in-transit/at-rest user profile fields (`name`, `phone`, `DOB`, location/income) and deletion option in Settings / Consent screens.
+   - **App Access / Test Credentials**: Provide instructions for testing the 4 demo roles (`CITIZEN`, `CSC_OPERATOR`, `REVIEWER`, `SUPERVISOR`) or Google Sign-In test account.
+3. Under **Release → Testing → Closed Testing (or Internal Testing)**, upload `app/build/outputs/bundle/release/app-release.aab`.
+4. Copy the **App Signing key certificate SHA-1 & SHA-256** generated by Google Play App Signing back into **Firebase Console → Project Settings → Your Android App** so Google Sign-In (`CredentialManager`) and **Firebase App Check** work in Play-distributed builds.
+5. Roll out to Internal/Closed testers, verify crash-free sign-in and `/api/v1` connectivity over HTTPS (`network_security_config.xml` restricts cleartext HTTP exclusively to local debug hosts), then promote to Production.

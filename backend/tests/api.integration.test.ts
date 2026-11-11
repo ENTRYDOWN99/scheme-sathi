@@ -61,7 +61,9 @@ describe('SchemeSaathi API Integration Tests', () => {
 
     citizenToken = ref1.body.accessToken;
 
-    const cscRes = await request(app).post('/api/v1/auth/demo-login').send({ role: 'CSC_OPERATOR' });
+    const cscRes = await request(app)
+      .post('/api/v1/auth/demo-login')
+      .send({ role: 'CSC_OPERATOR' });
     expect(cscRes.status).toBe(200);
     cscToken = cscRes.body.accessToken;
 
@@ -114,7 +116,9 @@ describe('SchemeSaathi API Integration Tests', () => {
       .set('Authorization', `Bearer ${citizenToken}`)
       .send({});
     expect(evalRes.status).toBe(200);
-    const pmKisan = evalRes.body.results.find((r: { schemeId: string }) => r.schemeId === 'PM-KISAN');
+    const pmKisan = evalRes.body.results.find(
+      (r: { schemeId: string }) => r.schemeId === 'PM-KISAN'
+    );
     const pmuy = evalRes.body.results.find((r: { schemeId: string }) => r.schemeId === 'PMUY');
     expect(pmKisan.outcome).toBe('ELIGIBLE');
     expect(pmuy.outcome).toBe('ELIGIBLE');

@@ -3,7 +3,7 @@
   --saathi-on-primary: #ffffff;
   --saathi-primary-container: #cfe9da;
   --saathi-on-primary-container: #0a2e1d;
-  --saathi-secondary: #e07b00;
+  --saathi-secondary: #b45309;
   --saathi-on-secondary: #ffffff;
   --saathi-secondary-container: #ffdfbe;
   --saathi-on-secondary-container: #3f2100;
@@ -18,7 +18,7 @@
   --saathi-not-eligible-bg: #fceaea;
   --saathi-not-eligible-fg: #b3261e;
   --saathi-unknown-bg: #fff5e5;
-  --saathi-unknown-fg: #b26a00;
+  --saathi-unknown-fg: #9a4a00;
   --saathi-error: #b3261e;
   --saathi-font-size: 16px;
 }

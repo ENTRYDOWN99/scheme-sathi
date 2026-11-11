@@ -1,6 +1,5 @@
 package com.example.ui.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ai.AiStreamUpdate
@@ -16,20 +15,14 @@ import com.example.data.model.DocumentHaveStatus
 import com.example.data.model.EligibilityEvaluationResult
 import com.example.data.model.SchemeApplication
 import com.example.data.remote.BackendApiClient
-import com.example.data.repository.SchemeSaathiRepository
 import com.example.domain.EligibilityEngine
 import com.example.security.TokenStore
 import com.example.util.DateUtils
 import com.example.util.SecurityUtils
-import com.google.firebase.firestore.FirebaseFirestoreException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -64,7 +57,6 @@ data class FormFieldProvenance(
 )
 
 class SchemeSaathiViewModel(
-    private val repository: SchemeSaathiRepository,
     private val currentUserId: String,
     private val aiService: SchemeSaathiAiService = SchemeSaathiAiService(),
     private val localDb: SchemeSaathiDatabase? = null,
@@ -95,7 +87,7 @@ class SchemeSaathiViewModel(
     private val _statusBanner = MutableStateFlow<String?>(null)
     val statusBanner: StateFlow<String?> = _statusBanner.asStateFlow()
 
-    // Local working copy of profile so user can edit smoothly and persist to Firestore
+    // Local working copy of profile synchronized with BackendApiClient REST endpoints
     private val _editableProfile = MutableStateFlow(
         CitizenProfile(
             userId = currentUserId,
@@ -131,79 +123,20 @@ class SchemeSaathiViewModel(
     private val _decryptedDob = MutableStateFlow("01/01/1964")
     val decryptedDob: StateFlow<String> = _decryptedDob.asStateFlow()
 
-    // Two-tier Kotlin Flow error handling for Firestore streams
-    val profileUiState: StateFlow<DataUiState<CitizenProfile?>> = repository.observeProfile(currentUserId)
-        .map<CitizenProfile?, DataUiState<CitizenProfile?>> { remoteProfile ->
-            if (remoteProfile != null) {
-                _editableProfile.value = remoteProfile
-                _language.value = remoteProfile.preferredLanguage.ifBlank { "hi" }
-                val decName = SecurityUtils.decryptPii(remoteProfile.encryptedName, currentUserId)
-                val decPhone = SecurityUtils.decryptPii(remoteProfile.encryptedPhone, currentUserId)
-                val decDob = SecurityUtils.decryptPii(remoteProfile.encryptedDob, currentUserId)
-                if (decName.isNotBlank()) _decryptedName.value = decName
-                if (decPhone.isNotBlank()) _decryptedPhone.value = decPhone
-                if (DateUtils.validateDob(decDob) is DateUtils.DobValidationResult.Valid) {
-                    _decryptedDob.value = decDob
-                } else {
-                    // Backward compatibility: If DOB is missing/blank, show DOB field empty
-                    // so the user is prompted to complete it, while age falls back to birthYear.
-                    _decryptedDob.value = ""
-                }
-            }
-            DataUiState.Success(remoteProfile)
-        }
-        .catch { error ->
-            val firestoreError = generateSequence(error) { it.cause }
-                .filterIsInstance<FirebaseFirestoreException>()
-                .firstOrNull()
-            if (firestoreError == null && error is CancellationException) throw error
-            val rootError = firestoreError ?: error
-            Log.w(TAG, "Error observing profile", rootError)
-            emit(DataUiState.Error(rootError.message ?: "Failed to observe citizen profile"))
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000L),
-            initialValue = DataUiState.Loading
-        )
+    private val _profileUiState = MutableStateFlow<DataUiState<CitizenProfile?>>(
+        DataUiState.Success(_editableProfile.value)
+    )
+    val profileUiState: StateFlow<DataUiState<CitizenProfile?>> = _profileUiState.asStateFlow()
 
-    val applicationsUiState: StateFlow<DataUiState<List<SchemeApplication>>> = repository.observeApplications(currentUserId)
-        .map<List<SchemeApplication>, DataUiState<List<SchemeApplication>>> { list ->
-            DataUiState.Success(list.sortedByDescending { it.createdAt?.seconds ?: 0L })
-        }
-        .catch { error ->
-            val firestoreError = generateSequence(error) { it.cause }
-                .filterIsInstance<FirebaseFirestoreException>()
-                .firstOrNull()
-            if (firestoreError == null && error is CancellationException) throw error
-            val rootError = firestoreError ?: error
-            Log.w(TAG, "Error observing applications", rootError)
-            emit(DataUiState.Error(rootError.message ?: "Failed to observe applications"))
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000L),
-            initialValue = DataUiState.Loading
-        )
+    private val _applicationsUiState = MutableStateFlow<DataUiState<List<SchemeApplication>>>(
+        DataUiState.Success(emptyList())
+    )
+    val applicationsUiState: StateFlow<DataUiState<List<SchemeApplication>>> = _applicationsUiState.asStateFlow()
 
-    val tasksUiState: StateFlow<DataUiState<List<CollaborativeTask>>> = repository.observeTasks(currentUserId)
-        .map<List<CollaborativeTask>, DataUiState<List<CollaborativeTask>>> { list ->
-            DataUiState.Success(list.sortedByDescending { it.createdAt?.seconds ?: 0L })
-        }
-        .catch { error ->
-            val firestoreError = generateSequence(error) { it.cause }
-                .filterIsInstance<FirebaseFirestoreException>()
-                .firstOrNull()
-            if (firestoreError == null && error is CancellationException) throw error
-            val rootError = firestoreError ?: error
-            Log.w(TAG, "Error observing collaborative tasks", rootError)
-            emit(DataUiState.Error(rootError.message ?: "Failed to observe collaborative tasks"))
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000L),
-            initialValue = DataUiState.Loading
-        )
+    private val _tasksUiState = MutableStateFlow<DataUiState<List<CollaborativeTask>>>(
+        DataUiState.Success(emptyList())
+    )
+    val tasksUiState: StateFlow<DataUiState<List<CollaborativeTask>>> = _tasksUiState.asStateFlow()
 
     // Document Checklist state (documentId -> HAVE / MISSING / UNKNOWN)
     private val _documentStatuses = MutableStateFlow<Map<String, DocumentHaveStatus>>(
@@ -385,6 +318,37 @@ class SchemeSaathiViewModel(
                 }
             }
         }
+        if (tokenStore?.getAccessToken() != null) {
+            syncFromBackend()
+        }
+    }
+
+    fun syncFromBackend() {
+        val client = backendClient ?: return
+        viewModelScope.launch {
+            client.fetchProfile(currentUserId).onSuccess { snap ->
+                _editableProfile.value = snap.profile
+                _language.value = snap.profile.preferredLanguage.ifBlank { "hi" }
+                if (snap.displayName.isNotBlank()) _decryptedName.value = snap.displayName
+                if (snap.phoneNumber.isNotBlank()) _decryptedPhone.value = snap.phoneNumber
+                if (DateUtils.validateDob(snap.dateOfBirth) is DateUtils.DobValidationResult.Valid) {
+                    _decryptedDob.value = snap.dateOfBirth
+                }
+                _profileUiState.value = DataUiState.Success(snap.profile)
+            }
+            client.fetchChecklists().onSuccess { items ->
+                if (items.isNotEmpty()) {
+                    val merged = _documentStatuses.value.toMutableMap().apply { putAll(items) }
+                    _documentStatuses.value = merged
+                }
+            }
+            client.fetchApplications().onSuccess { list ->
+                _applicationsUiState.value = DataUiState.Success(list.sortedByDescending { it.createdAtMillis })
+            }
+            client.fetchTasks().onSuccess { list ->
+                _tasksUiState.value = DataUiState.Success(list.sortedByDescending { it.updatedAtMillis })
+            }
+        }
     }
 
     fun selectScheme(schemeId: String) {
@@ -414,14 +378,18 @@ class SchemeSaathiViewModel(
                     val encName = SecurityUtils.encryptPii(_decryptedName.value, currentUserId)
                     val encPhone = SecurityUtils.encryptPii(_decryptedPhone.value, currentUserId)
                     val encDob = if (_decryptedDob.value.isNotBlank()) SecurityUtils.encryptPii(_decryptedDob.value, currentUserId) else updated.encryptedDob
-                    repository.saveProfile(updated.copy(encryptedName = encName, encryptedPhone = encPhone, encryptedDob = encDob))
+                    val savedProfile = updated.copy(encryptedName = encName, encryptedPhone = encPhone, encryptedDob = encDob)
+                    _editableProfile.value = savedProfile
+                    _profileUiState.value = DataUiState.Success(savedProfile)
+                    backendClient?.saveProfile(savedProfile, _decryptedName.value, _decryptedPhone.value, _decryptedDob.value)
                     _statusBanner.value = if (_language.value == "hi") {
                         "सहमति सुरक्षित रूप से दर्ज की गई (AES-256-GCM एन्क्रिप्टेड)।"
                     } else {
                         "Privacy consent recorded with AES-256-GCM encryption."
                     }
                 } else {
-                    repository.deleteProfile(currentUserId)
+                    backendClient?.deleteProfile()
+                    _profileUiState.value = DataUiState.Success(null)
                     _statusBanner.value = if (_language.value == "hi") {
                         "सहमति वापस ले ली गई और क्लाउड प्रोफ़ाइल हटा दी गई।"
                     } else {
@@ -490,15 +458,29 @@ class SchemeSaathiViewModel(
                 val encName = SecurityUtils.encryptPii(_decryptedName.value, currentUserId)
                 val encPhone = SecurityUtils.encryptPii(_decryptedPhone.value, currentUserId)
                 val encDob = if (_decryptedDob.value.isNotBlank()) SecurityUtils.encryptPii(_decryptedDob.value, currentUserId) else profile.encryptedDob
-                repository.saveProfile(
-                    profile.copy(
-                        userId = currentUserId,
-                        encryptedName = encName,
-                        encryptedPhone = encPhone,
-                        encryptedDob = encDob
-                    )
+                val savedProfile = profile.copy(
+                    userId = currentUserId,
+                    encryptedName = encName,
+                    encryptedPhone = encPhone,
+                    encryptedDob = encDob,
+                    updatedAtMillis = System.currentTimeMillis()
                 )
-                _statusBanner.value = if (_language.value == "hi") {
+                _editableProfile.value = savedProfile
+                _profileUiState.value = DataUiState.Success(savedProfile)
+                val apiRes = backendClient?.saveProfile(
+                    savedProfile,
+                    _decryptedName.value,
+                    _decryptedPhone.value,
+                    _decryptedDob.value
+                )
+                val backendFailed = apiRes?.isFailure == true
+                _statusBanner.value = if (backendFailed) {
+                    if (_language.value == "hi") {
+                        "प्रोफ़ाइल स्थानीय रूप से सहेजी गई (बैकएंड सिंक लंबित)।"
+                    } else {
+                        "Profile saved locally (backend sync pending)."
+                    }
+                } else if (_language.value == "hi") {
                     "✅ प्रोफ़ाइल AES-256-GCM एन्क्रिप्शन के साथ सुरक्षित हो गई और पात्रता अपडेट की गई!"
                 } else {
                     "✅ Profile saved with AES-256-GCM encryption & eligibility recalculated!"
@@ -526,7 +508,7 @@ class SchemeSaathiViewModel(
             // Mark age as unconfirmed until explicit Haan / Yes button is pressed.
             // Voice sets age directly; clear encryptedDob so fallback birthYear is used.
             _editableProfile.value = _editableProfile.value.copy(
-                birthYear = 2026 - parsedNumber,
+                birthYear = EligibilityEngine.currentReferenceYear() - parsedNumber,
                 encryptedDob = "",
                 ageConfirmedViaVoice = false
             )
@@ -559,7 +541,7 @@ class SchemeSaathiViewModel(
         val pendingAge = _pendingVoiceAge.value ?: return
         if (confirmedHaan) {
             _editableProfile.value = _editableProfile.value.copy(
-                birthYear = 2026 - pendingAge,
+                birthYear = EligibilityEngine.currentReferenceYear() - pendingAge,
                 encryptedDob = "",
                 ageConfirmedViaVoice = true
             )
@@ -709,6 +691,7 @@ class SchemeSaathiViewModel(
             client.demoLogin(role).onSuccess { auth ->
                 _editableProfile.value = _editableProfile.value.copy(role = auth.role)
                 _statusBanner.value = "✅ Connected to shared backend as ${auth.role}"
+                syncFromBackend()
             }.onFailure { err ->
                 // Allow local RBAC testing even if desktop backend server is stopped
                 _editableProfile.value = _editableProfile.value.copy(role = role)
@@ -799,6 +782,7 @@ class SchemeSaathiViewModel(
             ?: EligibilityEngine.initialFiveSchemes.first()
 
         val app = SchemeApplication(
+            id = "app_local_${UUID.randomUUID().toString().take(8)}",
             userId = currentUserId,
             schemeId = scheme.id,
             schemeName = if (_language.value == "hi") scheme.nameHi else scheme.nameEn,
@@ -813,12 +797,16 @@ class SchemeSaathiViewModel(
             bankIfscSource = _formBankSummary.value.source,
             checklistSummary = getCurrentChecklistSummaryForSelectedScheme(),
             snapshotHash = actualHash,
-            explicitCitizenConfirmed = true
+            explicitCitizenConfirmed = true,
+            createdAtMillis = System.currentTimeMillis(),
+            updatedAtMillis = System.currentTimeMillis()
         )
 
         viewModelScope.launch {
             try {
-                repository.createApplication(app)
+                val finalApp = backendClient?.createAndConfirmApplication(app)?.getOrNull() ?: app
+                val currentApps = (_applicationsUiState.value as? DataUiState.Success)?.data.orEmpty()
+                _applicationsUiState.value = DataUiState.Success(listOf(finalApp) + currentApps)
                 _statusBanner.value = if (_language.value == "hi") {
                     "✅ आवेदन की पुष्टि हो गई और गाइडेड हैंडऑफ पैक तैयार है!"
                 } else {
@@ -846,11 +834,25 @@ class SchemeSaathiViewModel(
         }
         viewModelScope.launch {
             try {
-                repository.updateApplication(
-                    application.copy(
-                        status = newStatus,
-                        verified = departmentVerified
+                val updatedApp = application.copy(
+                    status = newStatus,
+                    verified = departmentVerified,
+                    updatedAtMillis = System.currentTimeMillis()
+                )
+                if (newStatus in departmentStatuses && backendClient != null && tokenStore?.getAccessToken() != null) {
+                    val reviewRes = backendClient.reviewApplication(
+                        applicationId = application.id,
+                        decision = newStatus,
+                        reviewNote = "Reviewed from Android by ${_editableProfile.value.role}"
                     )
+                    if (reviewRes.isFailure) {
+                        _statusBanner.value = reviewRes.exceptionOrNull()?.message ?: "Backend RBAC denied review"
+                        return@launch
+                    }
+                }
+                val currentApps = (_applicationsUiState.value as? DataUiState.Success)?.data.orEmpty()
+                _applicationsUiState.value = DataUiState.Success(
+                    currentApps.map { if (it.id == application.id) updatedApp else it }
                 )
                 _statusBanner.value = "Status updated to $newStatus (${if (departmentVerified) "VERIFIED" else "SELF-REPORTED"})"
             } catch (e: CancellationException) {
@@ -874,7 +876,9 @@ class SchemeSaathiViewModel(
         deliveryChannel: String
     ) {
         if (title.isBlank()) return
+        val scheme = EligibilityEngine.getSchemeById(schemeCode) ?: EligibilityEngine.initialFiveSchemes.first()
         val task = CollaborativeTask(
+            id = "tsk_local_${UUID.randomUUID().toString().take(8)}",
             userId = currentUserId,
             title = title.trim(),
             description = description.trim().ifBlank { "Document verification & CSC handoff follow-up" },
@@ -886,12 +890,16 @@ class SchemeSaathiViewModel(
             dueDateLabel = dueDateLabel.trim().ifBlank { "Tomorrow 10:00 AM" },
             deliveryChannel = deliveryChannel,
             deliveryStatus = "SCHEDULED",
-            activityLogSummary = "[${_editableProfile.value.role}] Created task & scheduled $deliveryChannel reminder (Retry policy: 1m, 5m, 30m)"
+            activityLogSummary = "[${_editableProfile.value.role}] Created task & scheduled $deliveryChannel reminder (Retry policy: 1m, 5m, 30m)",
+            createdAtMillis = System.currentTimeMillis(),
+            updatedAtMillis = System.currentTimeMillis()
         )
         viewModelScope.launch {
             try {
-                repository.createTask(task)
-                onNotifyTask?.invoke(task.title, task.description)
+                val created = backendClient?.createTask(task, scheme.nameEn)?.getOrNull() ?: task
+                val currentTasks = (_tasksUiState.value as? DataUiState.Success)?.data.orEmpty()
+                _tasksUiState.value = DataUiState.Success(listOf(created) + currentTasks)
+                onNotifyTask?.invoke(created.title, created.description)
                 _statusBanner.value = "✅ Collaborative task & reminder scheduled ($deliveryChannel)"
             } catch (e: CancellationException) {
                 throw e
@@ -907,16 +915,20 @@ class SchemeSaathiViewModel(
             "IN_PROGRESS" -> "COMPLETED"
             else -> "COMPLETED"
         }
-        val nextDelivery = if (nextStatus == "COMPLETED") "DELIVERED" else "DELIVERED"
+        val nextDelivery = "DELIVERED"
         val updatedLog = "${task.activityLogSummary} -> Transitioned to $nextStatus by ${_editableProfile.value.role}"
         viewModelScope.launch {
             try {
-                repository.updateTask(
-                    task.copy(
-                        status = nextStatus,
-                        deliveryStatus = nextDelivery,
-                        activityLogSummary = updatedLog.take(950)
-                    )
+                val updated = task.copy(
+                    status = nextStatus,
+                    deliveryStatus = nextDelivery,
+                    activityLogSummary = updatedLog.take(950),
+                    updatedAtMillis = System.currentTimeMillis()
+                )
+                backendClient?.updateTaskStatus(task.id, nextStatus)
+                val currentTasks = (_tasksUiState.value as? DataUiState.Success)?.data.orEmpty()
+                _tasksUiState.value = DataUiState.Success(
+                    currentTasks.map { if (it.id == task.id) updated else it }
                 )
             } catch (e: CancellationException) {
                 throw e
@@ -929,12 +941,16 @@ class SchemeSaathiViewModel(
     fun cancelTaskReminder(task: CollaborativeTask) {
         viewModelScope.launch {
             try {
-                repository.updateTask(
-                    task.copy(
-                        status = "CANCELLED",
-                        deliveryStatus = "CANCELLED",
-                        activityLogSummary = "${task.activityLogSummary} -> Reminder cancelled by user".take(950)
-                    )
+                val updated = task.copy(
+                    status = "CANCELLED",
+                    deliveryStatus = "CANCELLED",
+                    activityLogSummary = "${task.activityLogSummary} -> Reminder cancelled by user".take(950),
+                    updatedAtMillis = System.currentTimeMillis()
+                )
+                backendClient?.updateTaskStatus(task.id, "CANCELLED")
+                val currentTasks = (_tasksUiState.value as? DataUiState.Success)?.data.orEmpty()
+                _tasksUiState.value = DataUiState.Success(
+                    currentTasks.map { if (it.id == task.id) updated else it }
                 )
             } catch (e: CancellationException) {
                 throw e

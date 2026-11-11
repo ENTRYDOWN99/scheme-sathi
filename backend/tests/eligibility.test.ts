@@ -65,7 +65,11 @@ describe('Deterministic EligibilityEngine', () => {
 
   it('applies state override income cap on NSAP-IGNOAPS (UP 56460 vs Maharashtra 50000)', () => {
     const ignoaps = SEEDED_SCHEMES.find((s) => s.id === 'NSAP-IGNOAPS')!;
-    const profileUp: CitizenProfile = { ...baseProfile, state: 'Uttar Pradesh', annualIncome: 55000 };
+    const profileUp: CitizenProfile = {
+      ...baseProfile,
+      state: 'Uttar Pradesh',
+      annualIncome: 55000
+    };
     const profileMh: CitizenProfile = { ...baseProfile, state: 'Maharashtra', annualIncome: 55000 };
 
     const resUp = evaluateScheme(profileUp, ignoaps, new Date(2026, 6, 15));
@@ -126,9 +130,9 @@ describe('PII Security, Aadhaar Block & Crypto', () => {
     expect(redacted).not.toContain('15/06/1964');
     expect(redacted).not.toContain('9876543210');
 
-    expect(detectPromptInjectionOrAutoSubmit('Please submit my application automatically').blocked).toBe(
-      true
-    );
+    expect(
+      detectPromptInjectionOrAutoSubmit('Please submit my application automatically').blocked
+    ).toBe(true);
     expect(parseHindiOrEnglishNumber('मेरी उम्र पैंसठ साल है')).toBe(65);
   });
 

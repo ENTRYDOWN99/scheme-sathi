@@ -153,11 +153,12 @@ export default function LoginPage() {
               {language === 'hi' ? 'OTP से सुरक्षित प्रवेश' : 'Sign In with One-Time Passcode'}
             </h1>
             <div className="space-y-1">
-              <label className="block text-sm font-semibold">
+              <label htmlFor="otp-identifier" className="block text-sm font-semibold">
                 {language === 'hi' ? 'मोबाइल नंबर (+91...) या ईमेल' : 'Phone (+91...) or Email'}
               </label>
               <div className="flex gap-2">
                 <input
+                  id="otp-identifier"
                   type="text"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
@@ -190,10 +191,11 @@ export default function LoginPage() {
 
             {otpSent && (
               <div className="space-y-2">
-                <label className="block text-sm font-semibold">
+                <label htmlFor="otp-code-input" className="block text-sm font-semibold">
                   {language === 'hi' ? '6-अंकीय OTP दर्ज करें' : 'Enter 6-digit OTP'}
                 </label>
                 <input
+                  id="otp-code-input"
                   type="text"
                   value={otpCode}
                   onChange={(e) => setOtpCode(e.target.value)}
@@ -224,10 +226,11 @@ export default function LoginPage() {
             </h1>
             {mode === 'register' && (
               <div>
-                <label className="block text-sm font-semibold mb-1">
+                <label htmlFor="register-name" className="block text-sm font-semibold mb-1">
                   {language === 'hi' ? 'पूरा नाम' : 'Full Name'}
                 </label>
                 <input
+                  id="register-name"
                   type="text"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
@@ -238,10 +241,11 @@ export default function LoginPage() {
               </div>
             )}
             <div>
-              <label className="block text-sm font-semibold mb-1">
+              <label htmlFor="auth-identifier" className="block text-sm font-semibold mb-1">
                 {language === 'hi' ? 'ईमेल या फोन नंबर' : 'Email or Phone'}
               </label>
               <input
+                id="auth-identifier"
                 type="text"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
@@ -251,10 +255,11 @@ export default function LoginPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold mb-1">
+              <label htmlFor="auth-password" className="block text-sm font-semibold mb-1">
                 {language === 'hi' ? 'पासवर्ड' : 'Password'}
               </label>
               <input
+                id="auth-password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

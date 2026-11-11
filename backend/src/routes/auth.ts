@@ -113,7 +113,11 @@ export function createAuthRouter(db: DatabaseClient): Router {
         [parsed.email ?? null, parsed.phone ?? null]
       );
       if (existing) {
-        throw new AppError(409, 'USER_EXISTS', 'An account with this email or phone already exists.');
+        throw new AppError(
+          409,
+          'USER_EXISTS',
+          'An account with this email or phone already exists.'
+        );
       }
 
       const now = new Date().toISOString();
@@ -164,11 +168,15 @@ export function createAuthRouter(db: DatabaseClient): Router {
   router.post('/login', authRateLimiter, async (req, res, next) => {
     try {
       const parsed = loginSchema.parse(req.body);
-      const userRow = await db.get<UserRow>(
-        'SELECT * FROM users WHERE email = ? OR phone = ?',
-        [parsed.identifier, parsed.identifier]
-      );
-      if (!userRow || !userRow.is_active || !verifyPassword(parsed.password, userRow.password_hash)) {
+      const userRow = await db.get<UserRow>('SELECT * FROM users WHERE email = ? OR phone = ?', [
+        parsed.identifier,
+        parsed.identifier
+      ]);
+      if (
+        !userRow ||
+        !userRow.is_active ||
+        !verifyPassword(parsed.password, userRow.password_hash)
+      ) {
         throw new AppError(401, 'INVALID_CREDENTIALS', 'Invalid email/phone or password.');
       }
 
@@ -198,7 +206,11 @@ export function createAuthRouter(db: DatabaseClient): Router {
         [parsed.role]
       );
       if (!userRow) {
-        throw new AppError(404, 'DEMO_USER_NOT_FOUND', `No demo account seeded for role ${parsed.role}`);
+        throw new AppError(
+          404,
+          'DEMO_USER_NOT_FOUND',
+          `No demo account seeded for role ${parsed.role}`
+        );
       }
       const user = rowToAuthUser(userRow);
       const { accessToken, refreshToken } = await createSessionTokens(db, user);
@@ -275,10 +287,10 @@ export function createAuthRouter(db: DatabaseClient): Router {
         otpRow.id
       ]);
 
-      let userRow = await db.get<UserRow>(
-        'SELECT * FROM users WHERE email = ? OR phone = ?',
-        [parsed.phoneOrEmail.trim(), parsed.phoneOrEmail.trim()]
-      );
+      let userRow = await db.get<UserRow>('SELECT * FROM users WHERE email = ? OR phone = ?', [
+        parsed.phoneOrEmail.trim(),
+        parsed.phoneOrEmail.trim()
+      ]);
 
       if (!userRow) {
         const now = new Date().toISOString();

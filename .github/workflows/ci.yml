@@ -1,0 +1,59 @@
+name: SchemeSaathi Full-Stack CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend API (Lint, Build, Vitest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+      - run: npm test
+
+  web:
+    name: Web PWA (Lint, Build, Playwright E2E)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install backend & web dependencies
+        run: |
+          cd backend && npm ci && cd ..
+          cd web && npm ci && npx playwright install chromium --with-deps
+      - name: Lint and Build Web PWA
+        run: cd web && npm run lint && npm run build
+      - name: Run Playwright End-to-End Tests
+        run: cd web && npm run test:e2e
+
+  android:
+    name: Android App (Unit Tests & Debug APK)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Prepare example google-services.json if absent
+        run: cp -n google-services.json.example google-services.json || true
+      - name: Run Android non-emulator unit tests & assembleDebug
+        run: ./gradlew assembleDebug testDebugUnitTest --tests "com.example.Phase5ParityTest" --tests "com.example.util.DateUtilsTest" --tests "com.example.ExampleUnitTest" --tests "com.example.ExampleRobolectricTest"
+

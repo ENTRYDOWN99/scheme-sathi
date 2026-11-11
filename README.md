@@ -193,7 +193,7 @@ copy app\google-services.json.example app\google-services.json
 
 ## 🌐 Deployment
 
-- **Web PWA (`/web`)**: Deploy Next.js (`Root Directory: web`, enable external workspace directory access for `/shared`) on **Vercel** or **Netlify** with `NEXT_PUBLIC_API_URL` pointing to your HTTPS backend.
+- **Web PWA (`/web`)**: Deploy Next.js (`Root Directory: web`, enable external workspace directory access for `/shared`) on **Netlify** or **Vercel** with `NEXT_PUBLIC_API_URL=/api/v1` and `BACKEND_URL=https://<service>.onrender.com`. Next.js `rewrites()` proxies `/api/v1/*` to `BACKEND_URL` so `httpOnly` `SameSite=Lax` auth cookies stay same-origin.
 - **Backend (`/backend`)**: Deploy Express + PostgreSQL 16 on **Render**, **Railway**, **Google Cloud Run**, or **Docker Compose** with `NODE_ENV=production`, strong `JWT_SECRET` / `JWT_REFRESH_SECRET` (`>=32` chars), and 64-hex `PII_ENCRYPTION_KEY`.
 - **Firebase & Play Console (`/app`)**: Keep `Firebase Auth`, `App Check` (`RecaptchaAppCheckProviderFactory`), and `Firebase AI SDK` configured with release Play App Signing SHA-1/SHA-256 fingerprints, then build a signed `.aab` (`.\gradlew.bat bundleRelease`).
 

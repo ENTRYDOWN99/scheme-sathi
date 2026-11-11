@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { KeyRound, Phone, Shield } from 'lucide-react';
 import type { Role } from '@shared/api-client';
 import { useSaathi } from '@/context/SaathiProvider';
-import { apiClient } from '@/lib/api';
+import { API_URL, apiClient } from '@/lib/api';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -59,9 +59,7 @@ export default function LoginPage() {
     setBusy(true);
     try {
       if (mode === 'register') {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1'}/auth/register`,
-          {
+        const res = await fetch(`${API_URL.replace(/\/$/, '')}/auth/register`, {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },

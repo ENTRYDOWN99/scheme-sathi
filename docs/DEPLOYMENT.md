@@ -85,17 +85,26 @@ curl -f http://localhost:4000/health
 
 ---
 
-## 3. Web PWA Deployment on Vercel (`/web`)
+## 3. Web PWA Deployment on Netlify / Vercel (`/web`)
 
-> **Important Note on Cookies Across Domains**: Backend auth issues `httpOnly`, `SameSite=Lax`, `Secure` session cookies in production. For cross-subdomain deployment (`app.yourdomain.com` + `api.yourdomain.com`), use a shared custom domain or configure Vercel `rewrites` in `next.config.ts` to proxy `/api/v1/*` to your backend URL cleanly under the same origin.
+> **Same-Origin Cookie Proxy**: Backend auth issues `httpOnly`, `SameSite=Lax`, `Secure` session cookies in production. Setting `NEXT_PUBLIC_API_URL=/api/v1` and `BACKEND_URL=https://<service>.onrender.com` enables [web/next.config.ts](../web/next.config.ts) `rewrites()` to proxy `/api/v1/*` to `BACKEND_URL` under the same origin so auth cookies work reliably across Netlify/Vercel and Render.
 
+### Option A: Netlify (`netlify.toml`)
+1. Import this GitHub repo in Netlify (auto-reads root `netlify.toml` with `base = "web"` and Node `24`).
+2. Set **Site Configuration → Environment Variables**:
+   - `NEXT_PUBLIC_API_URL=/api/v1`
+   - `BACKEND_URL=https://<service>.onrender.com`
+3. Deploy and set backend `CORS_ORIGIN` on Render to your `https://<site>.netlify.app` URL.
+
+### Option B: Vercel
 1. Go to **Vercel Dashboard → Add New Project** and import your GitHub repository.
 2. Configure **Project Settings → Build & Development**:
    - **Root Directory**: `web` (Note: `web/next.config.ts` enables `experimental.externalDir` to import `shared/`, so ensure **Include source files outside of the Root Directory** is enabled in Vercel General Settings).
    - **Framework Preset**: Next.js
    - **Build Command**: `npm run build`
 3. Set **Environment Variables**:
-   - `NEXT_PUBLIC_API_URL=https://api.your-domain.example/api/v1` (or your Render/Railway/Cloud Run URL + `/api/v1`)
+   - `NEXT_PUBLIC_API_URL=/api/v1`
+   - `BACKEND_URL=https://<service>.onrender.com`
 4. Deploy and confirm:
    - Update `CORS_ORIGIN` on the backend to include the exact `https://...vercel.app` (and custom domain) origin.
    - Verify `/` renders the scheme catalog, `/login` authenticates cleanly, and `manifest.webmanifest` / `sw.js` load over HTTPS.

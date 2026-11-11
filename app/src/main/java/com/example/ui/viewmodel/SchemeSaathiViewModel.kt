@@ -1,6 +1,5 @@
 package com.example.ui.viewmodel
 
-import android.graphics.Bitmap
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -200,13 +199,6 @@ class SchemeSaathiViewModel(
         )
     )
     val documentStatuses: StateFlow<Map<String, DocumentHaveStatus>> = _documentStatuses.asStateFlow()
-
-    // Document AI Scanner state (gemini-4-argon)
-    private val _documentAnalysisText = MutableStateFlow<String?>(null)
-    val documentAnalysisText: StateFlow<String?> = _documentAnalysisText.asStateFlow()
-
-    private val _isAnalyzingDocument = MutableStateFlow(false)
-    val isAnalyzingDocument: StateFlow<Boolean> = _isAnalyzingDocument.asStateFlow()
 
     // Application Form Provenance fields
     private val _formApplicantName = MutableStateFlow(FormFieldProvenance("सीता देवी (Sita Devi)", "profile"))
@@ -611,35 +603,11 @@ class SchemeSaathiViewModel(
         }
     }
 
-    // --- DOCUMENT CHECKLIST & MULTIMODAL IMAGE ANALYSIS (gemini-4-argon) ---
+    // --- DOCUMENT CHECKLIST ---
 
     fun updateDocumentHaveStatus(docId: String, status: DocumentHaveStatus) {
         _documentStatuses.value = _documentStatuses.value.toMutableMap().apply {
             put(docId, status)
-        }
-    }
-
-    fun analyzeUploadedDocumentPhoto(bitmap: Bitmap) {
-        viewModelScope.launch {
-            _isAnalyzingDocument.value = true
-            _documentAnalysisText.value = null
-            val scheme = EligibilityEngine.getSchemeById(_selectedSchemeId.value)
-                ?: EligibilityEngine.initialFiveSchemes.first()
-            val result = aiService.analyzeDocumentImage(
-                bitmap = bitmap,
-                schemeCode = scheme.code,
-                language = _language.value
-            )
-            _isAnalyzingDocument.value = false
-            _documentAnalysisText.value = result.getOrElse { err ->
-                val friendly = aiService.mapAiErrorToFriendlyMessage(err, _language.value)
-                val manual = if (_language.value == "hi") {
-                    "फोटो का विश्लेषण नहीं किया जा सका, कृपया चेकलिस्ट को मैन्युअल रूप से चिह्नित करें।"
-                } else {
-                    "Could not analyze photo automatically, please tick the checklist manually."
-                }
-                "⚠️ $friendly\n\n$manual"
-            }
         }
     }
 

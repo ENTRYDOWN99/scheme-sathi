@@ -237,8 +237,6 @@ fun AuthenticatedSchemeSaathiApp(
     val tasksUiState by viewModel.tasksUiState.collectAsStateWithLifecycle()
 
     val documentStatuses by viewModel.documentStatuses.collectAsStateWithLifecycle()
-    val isAnalyzingDocument by viewModel.isAnalyzingDocument.collectAsStateWithLifecycle()
-    val documentAnalysisText by viewModel.documentAnalysisText.collectAsStateWithLifecycle()
 
     val formApplicantName by viewModel.formApplicantName.collectAsStateWithLifecycle()
     val formStateDistrict by viewModel.formStateDistrict.collectAsStateWithLifecycle()
@@ -563,11 +561,8 @@ fun AuthenticatedSchemeSaathiApp(
                         language = language,
                         selectedSchemeId = selectedSchemeId,
                         documentStatuses = documentStatuses,
-                        isAnalyzingDocument = isAnalyzingDocument,
-                        documentAnalysisText = documentAnalysisText,
                         onSelectScheme = viewModel::selectScheme,
                         onUpdateDocStatus = viewModel::updateDocumentHaveStatus,
-                        onAnalyzeBitmap = viewModel::analyzeUploadedDocumentPhoto,
                         onNavigate = viewModel::navigateTo
                     )
                     AppScreen.APPLICATION_FORM -> ApplicationFormScreen(

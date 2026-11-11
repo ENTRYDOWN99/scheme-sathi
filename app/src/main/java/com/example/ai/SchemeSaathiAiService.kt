@@ -1,6 +1,5 @@
 package com.example.ai
 
-import android.graphics.Bitmap
 import android.util.Log
 import com.example.data.model.CitizenProfile
 import com.example.data.model.EligibilityEvaluationResult
@@ -42,12 +41,6 @@ enum class GeminiModelMode(
         labelEn = "Deep Thinking",
         labelHi = "गहन विश्लेषण",
         descriptionEn = "Deep reasoning with ThinkingLevel.HIGH (Fallback: gemini-3.8-flash)"
-    ),
-    COMPLEX_ARGON(
-        modelId = "gemini-4-argon",
-        labelEn = "Document & Vision",
-        labelHi = "दस्तावेज़ विश्लेषण",
-        descriptionEn = "Multimodal document understanding (Fallback: gemini-3.8-flash)"
     ),
     LIVE_VOICE(
         modelId = "gemini-3.8-flash",
@@ -112,13 +105,6 @@ class SchemeSaathiAiService {
                     thinkingLevel = ThinkingLevel.HIGH
                 }
             },
-            systemInstruction = content { text(systemPromptText) }
-        )
-    }
-
-    val argonModel by lazy {
-        Firebase.ai.generativeModel(
-            modelName = "gemini-4-argon",
             systemInstruction = content { text(systemPromptText) }
         )
     }
@@ -337,11 +323,6 @@ class SchemeSaathiAiService {
                 highThinkingCarbonModel to "gemini-3.8-flash",
                 fastLiteModel to "gemini-3.1-flash-lite"
             )
-            GeminiModelMode.COMPLEX_ARGON -> listOf(
-                argonModel to "gemini-4-argon",
-                flashModel to "gemini-3.8-flash",
-                fastLiteModel to "gemini-3.1-flash-lite"
-            )
             GeminiModelMode.FAST_LITE -> listOf(
                 fastLiteModel to "gemini-3.1-flash-lite",
                 flashModel to "gemini-3.8-flash"
@@ -402,82 +383,6 @@ class SchemeSaathiAiService {
             )
         }
     }
-
-    /**
-     * Analyzes an uploaded citizen document/certificate image.
-     * Uses multimodal vision fallback chain: gemini-4-argon -> gemini-3.8-flash.
-     * Note: gemini-3.1-flash-lite is text-only and not used for vision.
-     * If all vision models fail, gracefully returns a friendly message instructing the citizen
-     * to verify the document checklist manually, never showing raw exceptions or URLs.
-     */
-    suspend fun analyzeDocumentImage(
-        bitmap: Bitmap,
-        schemeCode: String,
-        language: String
-    ): Result<String> {
-        val prompt = if (language == "hi") {
-            """
-            इस दस्तावेज़ छवि का विश्लेषण योजना '$schemeCode' के लिए करें:
-            1. यह कौन सा दस्तावेज़ प्रतीत होता है? (जैसे खतौनी, राशन कार्ड, बैंक पासबुक, आयु प्रमाण पत्र)।
-            2. क्या इसमें नाम, जारी करने की तिथि या आधिकारिक मुहर स्पष्ट दिखाई दे रही है?
-            3. सुरक्षा नियम: यदि इसमें कोई 12 अंकों का आधार नंबर दिखे तो उसे कभी न लिखें ([REDACTED] लिखें)।
-            हिंदी में स्पष्ट बुलेट पॉइंट्स में उत्तर दें।
-            """.trimIndent()
-        } else {
-            """
-            Analyze this citizen welfare document image for scheme '$schemeCode':
-            1. Identify the document type (e.g., Land Khatauni, BPL Ration Card, Bank Passbook, Age Certificate).
-            2. Check legibility, visible fields, and whether any information appears missing for '$schemeCode'.
-            3. PRIVACY RULE: Redact any 12-digit Aadhaar number as [REDACTED_AADHAAR].
-            Provide a clear, structured checklist assessment.
-            """.trimIndent()
-        }
-
-        val visionModels = listOf(
-            argonModel to "gemini-4-argon",
-            flashModel to "gemini-3.8-flash"
-        )
-
-        var lastException: Throwable? = null
-
-        for ((model, modelId) in visionModels) {
-            try {
-                val response = withTimeout(45_000L) {
-                    model.generateContent(
-                        content {
-                            image(bitmap)
-                            text(prompt)
-                        }
-                    )
-                }
-                val text = response.text?.trim()
-                if (!text.isNullOrBlank()) {
-                    return Result.success(SecurityUtils.redactPiiForLlm(text))
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                lastException = e
-                Log.w(TAG, "Vision model $modelId failed (will attempt fallback): ${e.message}")
-            }
-        }
-
-        Log.e(TAG, "All vision models failed for document image analysis", lastException)
-        val friendlyMsg = mapAiErrorToFriendlyMessage(lastException, language)
-        val manualHint = if (language == "hi") {
-            "फोटो का विश्लेषण नहीं किया जा सका, कृपया चेकलिस्ट को मैन्युअल रूप से चिह्नित करें।"
-        } else {
-            "Could not analyze photo automatically, please tick the checklist manually."
-        }
-        return Result.success("⚠️ $friendlyMsg\n\n$manualHint")
-    }
-
-    // Keep alias for backwards compatibility
-    suspend fun analyzeDocumentImageWithArgon(
-        bitmap: Bitmap,
-        schemeCode: String,
-        language: String
-    ): Result<String> = analyzeDocumentImage(bitmap, schemeCode, language)
 
     /**
      * Converts text into natural spoken guidance script using model `gemini-3.8-flash-tts`

@@ -33,6 +33,5 @@
     <string name="ai_error_busy">AI is busy right now, please try again in a minute.</string>
     <string name="ai_error_network">Please check your internet connection and try again.</string>
     <string name="ai_error_generic">AI service is temporarily unavailable. Please try again shortly.</string>
-    <string name="doc_analysis_fallback">Could not analyze photo automatically, please tick the checklist manually.</string>
     <string name="ai_safety_human_gate">Safety Guardrail (Human Confirmation Gate): Scheme Saathi AI is strictly prohibited from auto-submitting government applications. Per security and governance policies, citizen welfare submissions require mandatory human review on the Review &amp; Confirm screen with a verifiable SHA-256 snapshot hash.</string>
 </resources>

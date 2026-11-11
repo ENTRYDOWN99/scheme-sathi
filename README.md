@@ -44,7 +44,7 @@
 
 Many eligible citizens miss out on essential welfare entitlements due to discovery barriers, complex multi-conditional eligibility criteria, language constraints, and administrative friction. Scheme Saathi addresses this with a **deterministic-first, AI-assisted architecture**:
 - **Deterministic Rule Engine**: Eligibility is evaluated strictly by a deterministic rule engine (never left to AI hallucination).
-- **Gemini AI Grounding**: Natural language conversation and document photo analysis grounded exclusively in authoritative rule outcomes.
+- **Gemini AI Grounding**: Natural language conversation and scheme guidance grounded exclusively in authoritative rule outcomes.
 - **Privacy By Design**: No Aadhaar numbers are ever collected or stored; citizen identifiers (Name, Phone) are encrypted with per-user AES-256-GCM.
 - **Human Confirmation Gate**: Applications cannot be automatically submitted to government portals; citizens verify all fields and receive a structured Guided Handoff Package for Common Service Centres (CSC).
 
@@ -58,7 +58,7 @@ flowchart TD
         A[AuthGateScreen] --> B[HomeDashboardScreen]
         B --> C[SchemeResults & Details]
         B --> D[AiChatScreen & VoiceAssistant]
-        B --> E[DocumentChecklist & Scanner]
+        B --> E[DocumentChecklistScreen]
         B --> F[ReviewConfirmScreen]
         B --> G[Alerts & Collaborative Tasks]
     end
@@ -122,9 +122,9 @@ flowchart TD
    - Mandatory echo-back confirmation gate (*"आपकी उम्र 62 साल है, सही है?"*) before voice attributes are accepted.
    - Spoken audio script preparation paired with Android `TextToSpeech` (`hi-IN` / `en-IN`).
 
-4. **Zero-Permission Document Photo Inspection**:
-   - Integrates Android Activity Result `PickVisualMedia` photo picker (no broad storage permissions needed).
-   - Visual inspection of uploaded documents (Khatauni, BPL ration cards, passbooks) with automatic Aadhaar redaction.
+4. **Scheme Required Document Checklist (`ApplicationAndTasksScreens.kt`)**:
+   - Interactive tracking of required certificates, land records, and passbooks (`Have`, `Missing`, `Unknown`).
+   - Equal-width accessibility-tested action chips with scheme-specific alternative document suggestions and issuance guidance.
 
 5. **Human Confirmation Gate & Guided Handoff Pack (`ApplicationAndTasksScreens.kt`)**:
    - Enforces explicit citizen checkbox review and acknowledgment of uncertain fields.
@@ -196,7 +196,6 @@ Scheme Saathi is **designed to run on free-tier Gemini via Firebase AI SDK (`Fir
 - **`gemini-3.8-flash`**:
   - Primary bilingual conversational multi-turn chat (`generateContentStream`).
   - High Thinking mode configured with `ThinkingLevel.HIGH` for deep reasoning.
-  - Multimodal document photo analysis (extracting certificate types, legibility, and details from photos while redacting any Aadhaar sequences).
   - Real-time spoken voice turn processing (`generateLiveVoiceTurn`).
 - **`gemini-3.1-flash-lite`**:
   - Ultra-fast low-latency text responses for fast Q&A, and primary chat fallback model.
@@ -204,19 +203,15 @@ Scheme Saathi is **designed to run on free-tier Gemini via Firebase AI SDK (`Fir
   - Generates culturally natural Hindi (`hi-IN`) and English (`en-IN`) spoken audio scripts before playback via Android's local TTS engine (fallback: `gemini-3.8-flash`).
 - **`gemini-4-carbon`**:
   - High Thinking deep reasoning mode identifier (fallback chain: `gemini-4-carbon` -> `gemini-3.8-flash` with `ThinkingLevel.HIGH` -> `gemini-3.1-flash-lite`).
-- **`gemini-4-argon`**:
-  - Complex multimodal vision identifier (fallback chain: `gemini-4-argon` -> `gemini-3.8-flash` with image input).
 
 ### Automated Model Fallback Chain & Central Error Mapper
 1. **Fallback Chain**:
-   - If a preview model or free-tier quota limit is reached (limit: 0, 429, or `ResourceExhausted`), the service automatically retries the next model in the chain (`gemini-3.8-flash` -> `gemini-3.1-flash-lite`).
-   - For document image analysis, only vision-capable models (`gemini-4-argon` -> `gemini-3.8-flash`) are called (text-only lite models are excluded).
+   - If a preview model or free-tier quota limit is reached (limit: 0, 429, or `ResourceExhausted`), the service automatically retries the next model in the chain (`gemini-4-carbon` -> `gemini-3.8-flash` -> `gemini-3.1-flash-lite`).
 2. **Central Error Mapper & Graceful Degradation**:
    - `SchemeSaathiAiService.mapAiErrorToFriendlyMessage`: translates raw exceptions into friendly bilingual strings ("AI is busy right now, please try again in a minute" / "AI सर्वर अभी व्यस्त है, कृपया एक मिनट बाद पुनः प्रयास करें।").
    - Raw exception details, URLs, and stack traces are logged with `Log.e` only and never displayed to the user.
    - If all models fail:
      - **Chat**: gracefully falls back to the deterministic offline summary (`buildDeterministicWizardFallback`).
-     - **Document Analysis**: gracefully prompts the user to verify the document checklist manually ("Could not analyze photo automatically, please tick the checklist manually.").
 
 ### Zero Hardcoded API Keys
 The application stores **zero Gemini or OpenAI API keys in code, Gradle files, or resource strings**. All generative AI calls route through the official Firebase AI SDK, which authenticates through Firebase App Check and Google Play Services.

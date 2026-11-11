@@ -4,12 +4,8 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.CalendarContract
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -31,7 +27,6 @@ import androidx.compose.material.icons.filled.AddAlert
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.GppGood
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Share
@@ -43,7 +38,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -83,33 +77,12 @@ fun DocumentChecklistScreen(
     language: String,
     selectedSchemeId: String,
     documentStatuses: Map<String, DocumentHaveStatus>,
-    isAnalyzingDocument: Boolean,
-    documentAnalysisText: String?,
     onSelectScheme: (String) -> Unit,
     onUpdateDocStatus: (String, DocumentHaveStatus) -> Unit,
-    onAnalyzeBitmap: (android.graphics.Bitmap) -> Unit,
     onNavigate: (AppScreen) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
     val scheme = EligibilityEngine.getSchemeById(selectedSchemeId) ?: EligibilityEngine.initialFiveSchemes.first()
-
-    // Zero-permission Android Photo Picker per Google Play Policy compliance
-    val photoPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri: Uri? ->
-        if (uri != null) {
-            try {
-                context.contentResolver.openInputStream(uri)?.use { stream ->
-                    val bmp = BitmapFactory.decodeStream(stream)
-                    if (bmp != null) {
-                        onAnalyzeBitmap(bmp)
-                    }
-                }
-            } catch (_: Exception) {
-            }
-        }
-    }
 
     Column(
         modifier = modifier
@@ -118,11 +91,21 @@ fun DocumentChecklistScreen(
             .padding(16.dp)
     ) {
         Text(
-            text = if (language == "hi") "दस्तावेज़ जांच सूची और AI स्कैनर" else "Document Checklist & AI Vision Scanner",
+            text = if (language == "hi") "दस्तावेज़ जांच सूची" else "Required Documents Checklist",
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.primary
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = if (language == "hi") {
+                "योजना हेतु आवश्यक दस्तावेज़ों की स्थिति चुनें (मेरे पास है / नहीं है / पता नहीं)।"
+            } else {
+                "Select your document availability status (Have / Missing / Unknown) for ${scheme.code}."
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(10.dp))
 
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             EligibilityEngine.initialFiveSchemes.forEach { item ->
@@ -133,97 +116,7 @@ fun DocumentChecklistScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // Multimodal Document Image Analysis Card
-        Card(
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.DocumentScanner, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (language == "hi") {
-                            "AI दस्तावेज़ छवि विश्लेषक"
-                        } else {
-                            "AI Document Photo Analyzer"
-                        },
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = if (language == "hi") {
-                        "अपनी खतौनी, राशन कार्ड या पासबुक की फोटो चुनें या नमूना दस्तावेज़ का AI से विश्लेषण करें (आधार नंबर स्वतः छिपा दिया जाता है)।"
-                    } else {
-                        "Pick a photo of your certificate/passbook via Android Photo Picker or analyze a sample document (Aadhaar numbers are automatically masked)."
-                    },
-                    style = MaterialTheme.typography.bodySmall
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
-                        onClick = {
-                            photoPickerLauncher.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                            )
-                        },
-                        enabled = !isAnalyzingDocument,
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("pick_document_photo_btn")
-                    ) {
-                        Text(if (language == "hi") "फ़ोटो चुनें" else "Upload Photo")
-                    }
-                    OutlinedButton(
-                        onClick = {
-                            val sampleBmp = BitmapFactory.decodeResource(
-                                context.resources,
-                                R.drawable.img_hero_welfare_1794371724484
-                            )
-                            if (sampleBmp != null) {
-                                onAnalyzeBitmap(sampleBmp)
-                            }
-                        },
-                        enabled = !isAnalyzingDocument,
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("analyze_sample_doc_btn")
-                    ) {
-                        Text(if (language == "hi") "नमूना जांचें" else "Scan Sample")
-                    }
-                }
-
-                if (isAnalyzingDocument) {
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(if (language == "hi") "दस्तावेज़ छवि का AI विश्लेषण जारी है..." else "Analyzing document image with AI...")
-                    }
-                }
-
-                if (!documentAnalysisText.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Surface(
-                        color = MaterialTheme.colorScheme.surface,
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = documentAnalysisText,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(12.dp)
-                        )
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         // Required Documents Checklist for Selected Scheme
         scheme.requiredDocuments.forEach { doc ->

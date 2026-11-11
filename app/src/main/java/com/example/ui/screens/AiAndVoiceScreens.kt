@@ -84,8 +84,7 @@ fun AiChatScreen(
     val chatModes = listOf(
         GeminiModelMode.STANDARD_FLASH,
         GeminiModelMode.FAST_LITE,
-        GeminiModelMode.HIGH_THINKING_CARBON,
-        GeminiModelMode.COMPLEX_ARGON
+        GeminiModelMode.HIGH_THINKING_CARBON
     )
 
     val samplePrompts = if (language == "hi") {

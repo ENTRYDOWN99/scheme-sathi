@@ -1,52 +1,59 @@
 # Scheme Saathi (स्कीम साथी)
 
-> **⚠️ DISCLAIMER**: **Not an official government app.** Scheme Saathi is an independent civic-tech assistant designed for hackathon demonstration. Eligibility results, financial thresholds, and benefit calculations are strictly informational and illustrative; final application decisions and benefit disbursements rest solely with the respective government issuing authorities.
+> **⚠️ DISCLAIMER**: **Not an official government app.** Scheme Saathi is an independent civic-tech assistant designed for informational guidance and demonstration. Eligibility results, financial thresholds, and benefit calculations are strictly informational and illustrative; final application decisions and benefit disbursements rest solely with the respective government issuing authorities.
 
-[![Android](https://img.shields.io/badge/Platform-Android_API_24+-3DDC84?style=flat&logo=android&logoColor=white)](https://developer.android.com)
+[![Android](https://img.shields.io/badge/Android-API_24+-3DDC84?style=flat&logo=android&logoColor=white)](https://developer.android.com)
+[![Next.js](https://img.shields.io/badge/Web_PWA-Next.js_15-000000?style=flat&logo=nextdotjs&logoColor=white)](https://nextjs.org)
+[![Express](https://img.shields.io/badge/Backend-Express_TypeScript-3178C6?style=flat&logo=express&logoColor=white)](https://expressjs.com)
 [![Kotlin](https://img.shields.io/badge/Language-Kotlin_2.2.10-7F52FF?style=flat&logo=kotlin&logoColor=white)](https://kotlinlang.org)
-[![Compose](https://img.shields.io/badge/UI-Jetpack_Compose_Material_3-4285F4?style=flat&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
-[![Firebase](https://img.shields.io/badge/Backend-Firebase_Auth_|_Firestore_|_App_Check-FFCA28?style=flat&logo=firebase&logoColor=black)](https://firebase.google.com)
-[![Gemini](https://img.shields.io/badge/AI-Firebase_AI_SDK_(Gemini)-8E75C2?style=flat&logo=google&logoColor=white)](https://firebase.google.com/docs/ai)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Firebase](https://img.shields.io/badge/Firebase-Auth_|_Firestore_|_App_Check-FFCA28?style=flat&logo=firebase&logoColor=black)](https://firebase.google.com)
+[![Gemini](https://img.shields.io/badge/AI-Firebase_AI_SDK_%26_Gemini-8E75C2?style=flat&logo=google&logoColor=white)](https://firebase.google.com/docs/ai)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
 
 ## ⚡ Judge Quick Start
 
-> ### 🏆 For Hackathon Judges & Evaluators:
+> ### 🏆 For Hackathon Judges & Evaluators
 >
-> #### 🚀 Path A: Fastest Evaluation (Recommended)
-> Download the pre-built, signed APK directly from GitHub Releases:
-> - **Download Link**: `TODO: https://github.com/YOUR_USERNAME/saathi/releases/latest/download/SchemeSaathi.apk`
-> - **Why this path?** This APK is pre-signed with the registered SHA-1 certificate, allowing **real Google Sign-In** and **live Firebase backend sync** to work immediately on any Android phone (Android 7.0+ / API 24+).
-> *(Note: The `.apk` file is intentionally excluded from the Git repository history to maintain a clean codebase).*
->
-> #### 🛠️ Path B: Build from Source
+> #### 🌐 Path A: Full-Stack Web PWA + Shared API (Fastest Local Demo)
 > ```powershell
-> # 1. Clone repository
+> # 1. Clone & configure environment
 > git clone https://github.com/YOUR_USERNAME/saathi.git
 > cd saathi
 >
-> # 2. Copy the template Firebase configuration
-> copy app\google-services.json.example app\google-services.json
+> # 2. Start Shared Backend (http://localhost:4000, Swagger UI at /api/docs)
+> cd backend && npm ci && npm run migrate && npm run seed && npm run dev
 >
-> # 3. Build the debug APK
-> .\gradlew.bat assembleDebug
+> # 3. In a second terminal, start the Web PWA (http://localhost:3000)
+> cd web && npm ci && npm run dev
 > ```
-> ⚠️ **Important Note on Building with the Example Config**:
-> When building from source with `app/google-services.json.example`, the project compiles cleanly and offline features (deterministic eligibility engine, offline fallback chat, UI navigation) function as expected. However, **live Google Sign-In and Cloud Firestore will NOT authenticate with the example file** because Google Play Services and **Firebase App Check** strictly enforce that the Android app's signing certificate SHA-1 and OAuth client ID match a live registered Firebase project in the cloud. To enable live auth in your own build, see [Connecting Your Own Firebase Project](#connecting-your-own-firebase-project).
+> Or launch **PostgreSQL 16 + Backend + Web PWA** in one command with Docker:
+> ```bash
+> docker compose up --build
+> ```
+>
+> #### 📱 Path B: Android APK (Pre-built Release vs Source Build)
+> - **Pre-built Release APK (Recommended for Live Firebase Auth)**: Download from GitHub Releases (`TODO: https://github.com/YOUR_USERNAME/saathi/releases/latest/download/SchemeSaathi.apk`) for live Google Sign-In and Firebase sync (`.apk` is intentionally excluded from Git).
+> - **Build from Source**:
+>   ```powershell
+>   copy app\google-services.json.example app\google-services.json
+>   .\gradlew.bat assembleDebug
+>   ```
+>   ⚠️ When building with `app/google-services.json.example`, the APK compiles cleanly and works with the deterministic rule engine, offline fallback chat, Room cache, and local REST API (`http://10.0.2.2:4000/api/v1`), while **live Google Sign-In and Cloud Firestore will NOT authenticate** because Google Play Services and **Firebase App Check** require a registered SHA-1 and Firebase project.
 
 ---
 
 ## 📌 Overview
 
-**Scheme Saathi** (Citizen Welfare Scheme & Collaborative Task Companion) is a native Android application built to bridge the discovery and access gap between Indian citizens and social welfare entitlements.
+**Scheme Saathi** (Citizen Welfare Scheme & Collaborative Task Companion) is a full-stack bilingual (`en` / `hi`) civic-tech platform delivered in **two clients** — a responsive **Next.js PWA Website (`/web`)** and a native **Jetpack Compose Android App (`/app`)** — both powered by **one unified REST Backend (`/backend`)** and shared tokens/i18n/types (`/shared`).
 
-Many eligible citizens miss out on essential welfare entitlements due to discovery barriers, complex multi-conditional eligibility criteria, language constraints, and administrative friction. Scheme Saathi addresses this with a **deterministic-first, AI-assisted architecture**:
-- **Deterministic Rule Engine**: Eligibility is evaluated strictly by a deterministic rule engine (never left to AI hallucination).
-- **Gemini AI Grounding**: Natural language conversation and scheme guidance grounded exclusively in authoritative rule outcomes.
-- **Privacy By Design**: No Aadhaar numbers are ever collected or stored; citizen identifiers (Name, Phone) are encrypted with per-user AES-256-GCM.
-- **Human Confirmation Gate**: Applications cannot be automatically submitted to government portals; citizens verify all fields and receive a structured Guided Handoff Package for Common Service Centres (CSC).
+Key engineering principles:
+- **Deterministic Rule Engine First**: Scheme eligibility is evaluated strictly by a pure deterministic rule engine (`EligibilityEngine`) with zero AI guesswork or hallucination.
+- **Grounded AI Guidance**: Gemini chat and bilingual voice Q&A are strictly grounded in deterministic eligibility and checklist outputs, with automatic deterministic fallback when offline or rate-limited.
+- **Privacy By Design**: No 12-digit Aadhaar numbers are ever collected or stored across any layer; citizen PII (name, phone, `DD/MM/YYYY` DOB) is encrypted with AES-256-GCM.
+- **Human Confirmation Gate**: Applications cannot be auto-submitted to government portals; citizens review every field, acknowledge uncertain items, lock a **SHA-256 snapshot hash**, and receive a Guided Handoff Package for Common Service Centres (CSC).
+- **4-Role Access Control (RBAC)**: Distinct workflows for `CITIZEN`, `CSC_OPERATOR`, `REVIEWER`, and `SUPERVISOR`.
 
 ---
 
@@ -54,289 +61,168 @@ Many eligible citizens miss out on essential welfare entitlements due to discove
 
 ```mermaid
 flowchart TD
-    subgraph UI ["Client UI Layer (Jetpack Compose M3)"]
-        A[AuthGateScreen] --> B[HomeDashboardScreen]
-        B --> C[SchemeResults & Details]
-        B --> D[AiChatScreen & VoiceAssistant]
-        B --> E[DocumentChecklistScreen]
-        B --> F[ReviewConfirmScreen]
-        B --> G[Alerts & Collaborative Tasks]
+    subgraph Clients ["Dual Client Applications"]
+        WEB["Web PWA (/web)\nNext.js 15 App Router + Tailwind"]
+        AND["Android App (/app)\nKotlin + Jetpack Compose M3\nRoom Cache + Keystore TokenStore"]
     end
 
-    subgraph ViewModel ["State & Coordination Layer"]
-        VM[SchemeSaathiViewModel]
+    subgraph Shared ["Shared Package (/shared)"]
+        SH["Design Tokens · EN/HI i18n · Typed API Client"]
     end
 
-    subgraph Domain ["Pure Deterministic Domain Layer"]
-        EE[EligibilityEngine]
-        SEC[SecurityUtils]
+    subgraph Backend ["Unified REST Backend (/backend)"]
+        API["Express API (/api/v1/*)\nRBAC · Aadhaar Guard · Rate Limiter\nSwagger UI (/api/docs)"]
+        ENG["Deterministic EligibilityEngine\nALL/ANY Trees · State Caps · DD/MM/YYYY Age"]
+        DB["SQLite (dev) / PostgreSQL 16 (prod)\nAES-256-GCM PII Vault · Audit Trail"]
+        AISRV["AI Gateway (/api/v1/ai/*)\nPII Redactor · Fallback Responder"]
     end
 
-    subgraph Data ["Data & Integration Layer"]
-        REPO[SchemeSaathiRepository]
-        AI[SchemeSaathiAiService]
+    subgraph Cloud ["Optional Firebase & Gemini Services"]
+        FB["Firebase Auth / Firestore / App Check"]
+        GEM["Gemini Models\n(Firebase AI SDK & Server Key)"]
     end
 
-    subgraph Backend ["Cloud Infrastructure"]
-        FA[Firebase Authentication]
-        FS[Cloud Firestore]
-        FAC[Firebase App Check]
-        FAI[Firebase AI SDK]
-    end
-
-    subgraph GoogleAI ["Google Cloud AI Services"]
-        GEMINI[Gemini Models]
-    end
-
-    UI --> VM
-    VM --> EE
-    VM --> SEC
-    VM --> REPO
-    VM --> AI
-
-    EE -.->|Grounded Rules & Outcomes| AI
-    REPO --> FA
-    REPO --> FS
-    VM -.->|App Integrity Validation| FAC
-    AI --> FAI
-    FAI --> GEMINI
+    WEB --> SH
+    WEB -->|httpOnly JWT Cookie| API
+    AND -->|OkHttp Bearer JWT| API
+    AND <-->|Sync & Grounded AI| FB
+    FB --> GEM
+    API --> ENG
+    API --> DB
+    API --> AISRV
+    AISRV --> ENG
+    AISRV -.->|Optional Server Key| GEM
 ```
 
 ---
 
 ## ✨ Key Features (Verified from Codebase)
 
-1. **Deterministic 5-Scheme Rule Engine (`EligibilityEngine.kt`)**:
-   - Pure, synchronous, I/O-free evaluator implementing `ALL` and `ANY` combinators.
-   - Evaluates operators (`EQ`, `GTE`, `LTE`, `IN`, `BETWEEN`, `EXTERNAL_LOOKUP`).
-   - Missing fields and unconfirmed voice data always evaluate to `UNKNOWN` (never `NOT_ELIGIBLE`).
-   - State-specific income cap overrides for Uttar Pradesh, Bihar, Maharashtra, Madhya Pradesh, and Rajasthan.
+1. **Deterministic 5-Scheme Rule Engine (`EligibilityEngine`)**:
+   - Implemented identically across Android (`app/src/main/java/com/example/domain/EligibilityEngine.kt`) and Backend (`backend/src/domain/eligibilityEngine.ts`).
+   - Evaluates `ALL` and `ANY` rule trees with `EQ`, `GTE`, `LTE`, `IN`, `BETWEEN`, and `EXTERNAL_LOOKUP` operators.
+   - Missing or unconfirmed attributes strictly evaluate to `UNKNOWN` (never `NOT_ELIGIBLE`).
+   - Supports dynamic current reference year and state-specific income overrides (Uttar Pradesh, Bihar, Maharashtra, Madhya Pradesh, Rajasthan).
 
-2. **Grounded Gemini AI Assistant (`SchemeSaathiAiService.kt`)**:
-   - Multi-turn streaming chat grounded strictly in deterministic tool results (`check_eligibility`, `get_profile_summary`, `get_required_documents`).
-   - Pre-prompt safety filters: prompt-injection detection, Aadhaar number blocker, and automated PII redaction.
-   - Deterministic offline summary fallback if AI times out (60s) or encounters connectivity issues.
+2. **Grounded Bilingual AI & Voice Assistant (`SchemeSaathiAiService.kt` & `/api/v1/ai`)**:
+   - Multi-turn streaming chat on Android via Firebase AI SDK (`gemini-3.8-flash`, `gemini-3.1-flash-lite`, `gemini-3.8-flash-tts`, `gemini-4-carbon`) and REST chat endpoint on Backend/Web.
+   - Pre-prompt prompt-injection detection, 12-digit Aadhaar blocker, PII redaction, central user-friendly error mapping (`busy` / `network` / `generic`), and deterministic offline fallback.
+   - Android voice confirmation gate: extracts Hindi/English spoken numerals and requires explicit echo-back confirmation before updating profile age.
 
-3. **Spoken Voice Guidance & Confirmation Gate (`AiAndVoiceScreens.kt`)**:
-   - Indian numeral extraction supporting Hindi spoken words (e.g., `बासठ` = 62) and English digits.
-   - Mandatory echo-back confirmation gate (*"आपकी उम्र 62 साल है, सही है?"*) before voice attributes are accepted.
-   - Spoken audio script preparation paired with Android `TextToSpeech` (`hi-IN` / `en-IN`).
+3. **Profile (`DD/MM/YYYY` DOB) & Document Checklist (`Have` / `Missing` / `Unknown`)**:
+   - Strict calendar validation (`DateUtils`), leap-year/future checks, exact age calculation accounting for upcoming birthdays, and encrypted DOB storage.
+   - Offline-cached Android document checklist via **Room (`SchemeSaathiDatabase`)** and full checklist persistence via `PUT /api/v1/checklists/:schemeId`.
 
-4. **Scheme Required Document Checklist (`ApplicationAndTasksScreens.kt`)**:
-   - Interactive tracking of required certificates, land records, and passbooks (`Have`, `Missing`, `Unknown`).
-   - Equal-width accessibility-tested action chips with scheme-specific alternative document suggestions and issuance guidance.
+4. **Human Confirmation Gate & CSC Guided Handoff Pack**:
+   - Requires explicit citizen declarations (`reviewedFields`, `acknowledgedUnknowns`, `confirmNoAutoSubmit`) to lock an immutable **SHA-256 snapshot hash** and generate a CSC Handoff Pack.
+   - Blocks AI from auto-submitting or self-approving any application.
 
-5. **Human Confirmation Gate & Guided Handoff Pack (`ApplicationAndTasksScreens.kt`)**:
-   - Enforces explicit citizen checkbox review and acknowledgment of uncertain fields.
-   - Computes deterministic **SHA-256 snapshot hash** over form fields and checklist data for audit traceability.
-   - Generates a structured Guided Handoff Pack with portal instructions and CSC operator guidance.
+5. **Role-Based Operations, Alerts/Tasks & Audit Log**:
+   - Roles: `CITIZEN`, `CSC_OPERATOR`, `REVIEWER`, `SUPERVISOR`.
+   - Operator Desk (`/operator` on Web, RBAC controls on Android) for acknowledging/reviewing/approving applications (`REVIEWER` and `SUPERVISOR` only for `APPROVED`).
+   - Collaborative task alerts with Android local notifications (`NotificationHelper`) and DPDP JSON data export + CSV security audit log export.
 
-6. **Collaborative Civic Tasks & Audit Logging**:
-   - Role-based task management (`CITIZEN`, `CSC_OPERATOR`, `SUPERVISOR`, `REVIEWER`).
-   - In-app task status advancement with due dates and delivery channels.
-   - One-click CSV export of security audit findings and task logs.
+---
+
+## 👥 Role-Wise User Guide
+
+| Role | Access Scope | Primary Screens / Actions |
+|---|---|---|
+| **Citizen (`CITIZEN`)** | Own profile, checklists, draft applications, tasks, AI chat, DPDP export | Complete profile (`DD/MM/YYYY`), check 5 schemes, manage document checklist, submit Human Confirmation Gate Handoff Pack, view tasks & export personal JSON |
+| **CSC Operator (`CSC_OPERATOR`)** | Assisted citizen intake & operational triage (`ACKNOWLEDGED` / `IN_PROGRESS` tasks) | Web `/operator` desk & Android Application Tracking; acknowledge submitted handoff packs, create/update citizen preparation tasks |
+| **Reviewer (`REVIEWER`)** | Application verification & decisioning | Inspect SHA-256 snapshot hashes and rule outcomes; advance applications to `APPROVED`, `NEEDS_INFO`, or `REJECTED` |
+| **Supervisor (`SUPERVISOR`)** | Full operational oversight & security/audit review | All Reviewer actions + inspect PII-redacted security audit logs (`/api/v1/audit`, CSV export) |
 
 ---
 
 ## 🏛️ Supported Welfare Schemes
 
-Scheme Saathi seeds 5 core government welfare schemes with deterministic rule trees and official portal integrations:
-
 | Scheme Code | Scheme Name & Ministry | Illustrative Benefits | Core Eligibility Criteria | Official Source Portal |
 |---|---|---|---|---|
-| **PM-KISAN** | Pradhan Mantri Kisan Samman Nidhi *(Ministry of Agriculture & Farmers Welfare)* | ₹6,000 / year in 3 direct benefit transfer (DBT) installments | Age ≥ 18, owns cultivable land, not an income-tax payer, active bank account | [pmkisan.gov.in](https://pmkisan.gov.in) |
-| **NSAP-IGNOAPS** | Indira Gandhi National Old Age Pension Scheme *(Ministry of Rural Development)* | Central ₹200–₹500/mo + State top-up (e.g. ₹500–₹1,000/mo) | Age ≥ 60, BPL household, annual income within state threshold (UP, Bihar, MH, MP, RJ overrides) | [nsap.nic.in](https://nsap.nic.in) |
-| **PMUY** | Pradhan Mantri Ujjwala Yojana 2.0 *(Ministry of Petroleum and Natural Gas)* | Deposit-free LPG connection + first refill and stove assistance | Adult woman (Age ≥ 18), no existing LPG connection in household, BPL or SC/ST/deprived category | [pmuy.gov.in](https://www.pmuy.gov.in) |
-| **PM-JAY** | Ayushman Bharat - PM Jan Arogya Yojana *(National Health Authority)* | Up to ₹5 Lakh cashless hospitalization cover per family per year | BPL/NFSA household, senior citizen aged 70+ (Vaya Vandana), or low income; requires SECC-2011/NFSA lookup | [beneficiary.nha.gov.in](https://beneficiary.nha.gov.in) |
-| **APY** | Atal Pension Yojana *(PFRDA / NPS Trust)* | Guaranteed monthly pension of ₹1,000–₹5,000 after age 60 | Entry age 18–40, unorganized sector worker, savings bank account for auto-debit, not an income-tax payer | [npscra.nsdl.co.in](https://www.npscra.nsdl.co.in) |
+| **PM-KISAN** | Pradhan Mantri Kisan Samman Nidhi *(Ministry of Agriculture & Farmers Welfare)* | ₹6,000 / year in 3 DBT installments | Age ≥ 18, owns cultivable land, not an income-tax payer, active bank account | [pmkisan.gov.in](https://pmkisan.gov.in) |
+| **NSAP-IGNOAPS** | Indira Gandhi National Old Age Pension Scheme *(Ministry of Rural Development)* | Central ₹200–₹500/mo + State top-up | Age ≥ 60, BPL household, annual income within state cap (UP, Bihar, MH, MP, RJ overrides) | [nsap.nic.in](https://nsap.nic.in) |
+| **PMUY** | Pradhan Mantri Ujjwala Yojana 2.0 *(Ministry of Petroleum & Natural Gas)* | Deposit-free LPG connection + refill/stove assistance | Adult woman (Age ≥ 18), no existing LPG connection, BPL or SC/ST/deprived category | [pmuy.gov.in](https://www.pmuy.gov.in) |
+| **PM-JAY** | Ayushman Bharat - PM Jan Arogya Yojana *(National Health Authority)* | Up to ₹5 Lakh cashless hospitalization cover/family/yr | BPL/NFSA household, senior citizen age 70+ (Vaya Vandana), or SECC-2011/NFSA lookup | [beneficiary.nha.gov.in](https://beneficiary.nha.gov.in) |
+| **APY** | Atal Pension Yojana *(PFRDA / NPS Trust)* | Guaranteed monthly pension ₹1,000–₹5,000 after age 60 | Entry age 18–40, unorganized sector worker, savings bank account, non-taxpayer | [npscra.nsdl.co.in](https://npscra.nsdl.co.in) |
 
 ---
 
 ## 🛡️ Security & Privacy Architecture
 
-Security and citizen protection are built into the foundation of Scheme Saathi:
-
-### 1. No Aadhaar Number Storage
-- In strict adherence to privacy rules, the app **never asks for, accepts, or stores 12-digit Aadhaar numbers**.
-- **Client-Side Regex Guard** (`SecurityUtils.containsAadhaarNumber`): any 12-digit sequence entered into forms or chat is detected via regex and immediately blocked.
-- **Database Schema Enforcement** (`backend/firestore.rules`): Firestore rules use `incoming().keys().hasOnly([...])` strict field validation. Any document containing an unauthorized field such as `aadhaar` is rejected at the database boundary.
-
-### 2. Field-Level AES-256-GCM Encryption
-- Sensitive citizen identifiers (Name, Phone number, Date of Birth `encryptedDob`) are encrypted locally using **AES-256-GCM** before being saved to Cloud Firestore.
-- **Key Derivation (as implemented in `SecurityUtils.kt#L22-L48`)**:
-  - The encryption key is derived per authenticated user by taking a **SHA-256** hash over the salt string `"scheme-saathi-vault-v1:$userId"`.
-  - Encryption uses `Cipher.getInstance("AES/GCM/NoPadding")` with a **unique 12-byte initialization vector (IV)** generated per encryption call using `SecureRandom`.
-  - Includes a **128-bit authentication tag**.
-  - Ciphertext is stored as `"GCM1:"` followed by Base64-encoded `IV + CipherText + Tag`.
-- **Date of Birth & Age Privacy**:
-  - Date of birth (`DD/MM/YYYY`) is validated against real calendar rules (`DateUtils`) and kept strictly encrypted.
-  - Plaintext DOB is never sent to the LLM; only the calculated age (accounting for whether the birthday has occurred yet this year) is provided in AI summaries.
-  - Profiles with only `birthYear` (legacy or voice flows) fall back gracefully without breaking eligibility.
-
-### 3. PII Redaction Before LLM Calls (`SecurityUtils.kt#L83-L96`)
-- Personal identifiers are automatically sanitized before any prompt is dispatched to Gemini:
-  - Citizen name: replaced with `[REDACTED_NAME]`
-  - Citizen phone: replaced with `[REDACTED_PHONE]`
-  - 10-digit Indian mobile numbers (`\b[6-9]\d{9}\b`): replaced with `[REDACTED_PHONE]`
-  - 12-digit Aadhaar-like sequences (`\b\d{4}[\s-]?\d{4}[\s-]?\d{4}\b`): replaced with `[REDACTED_AADHAAR_FORBIDDEN]`
-
-### 4. Firebase App Check Protection (`AppCheckInitializer.kt`)
-- Backend resources (Firestore, Gemini AI) are guarded by **Firebase App Check** initialized at startup:
-  - **Debug builds**: Uses `DebugAppCheckProviderFactory` with optional intent extra secret token support (`DEBUG_SECRET_KEY`).
-  - **Release builds**: Uses `RecaptchaAppCheckProviderFactory` with a Google reCAPTCHA Enterprise site key.
-
-### 5. Human Confirmation Gate
-- Scheme Saathi **does not** automatically submit applications to government servers.
-- The **Review & Confirm Screen** calculates a **SHA-256 snapshot hash** over all form fields, document statuses, and user declarations (`SecurityUtils.computeSnapshotHash`).
-- Requires explicit citizen confirmation and acknowledgment of uncertain fields to generate a structured **Guided Handoff Pack** for submission at an authorized Common Service Centre (CSC) or official portal.
+1. **No Aadhaar Number Collection/Storage**:
+   - Blocked in UI/input forms, regex-rejected at REST middleware (`noAadhaarMiddleware` returning `400 NO_AADHAAR_POLICY`), and rejected in Cloud Firestore (`backend/firestore.rules` `incoming().keys().hasOnly([...])`).
+2. **AES-256-GCM PII Encryption & Minimal Logging**:
+   - **Android (`SecurityUtils.kt`)**: Per-user key via SHA-256 over `"scheme-saathi-vault-v1:$userId"`, `AES/GCM/NoPadding`, unique 12-byte `SecureRandom` IV, 128-bit auth tag.
+   - **Backend (`backend/src/security/crypto.ts`)**: AES-256-GCM encryption for stored `fullName`, `phone`, `dob`, validated against a 64-hex `PII_ENCRYPTION_KEY` in production.
+   - **Token Storage**: Web uses `httpOnly` session cookies; Android stores backend JWTs in **Android Keystore (`TokenStore.kt`)**.
+   - **Log Hygiene (`FirestoreErrorHandler.kt`)**: PII (`userId`, `email`, raw exception strings) redacted before `Log.e`.
+3. **LLM PII Redaction (`SecurityUtils.kt` & `backend/src/security/piiGuard.ts`)**:
+   - Strips citizen names, phone numbers (`[6-9]\d{9}`), Aadhaar patterns (`\d{4}[\s-]?\d{4}[\s-]?\d{4}`), and bank accounts before sending prompts to Gemini.
+4. **Firebase App Check (`AppCheckInitializer.kt`)**:
+   - Uses `DebugAppCheckProviderFactory` in debug builds and `RecaptchaAppCheckProviderFactory` in release builds.
 
 ---
 
-## 🤖 AI & Voice Engine (Firebase AI SDK)
+## 🤖 AI & Voice Engine
 
-Scheme Saathi is **designed to run on free-tier Gemini via Firebase AI SDK (`Firebase.ai`)**:
-
-### Gemini Models Configured (Verbatim code identifiers from `SchemeSaathiAiService.kt`):
-- **`gemini-3.8-flash`**:
-  - Primary bilingual conversational multi-turn chat (`generateContentStream`).
-  - High Thinking mode configured with `ThinkingLevel.HIGH` for deep reasoning.
-  - Real-time spoken voice turn processing (`generateLiveVoiceTurn`).
-- **`gemini-3.1-flash-lite`**:
-  - Ultra-fast low-latency text responses for fast Q&A, and primary chat fallback model.
-- **`gemini-3.8-flash-tts`** + Android `TextToSpeech`:
-  - Generates culturally natural Hindi (`hi-IN`) and English (`en-IN`) spoken audio scripts before playback via Android's local TTS engine (fallback: `gemini-3.8-flash`).
-- **`gemini-4-carbon`**:
-  - High Thinking deep reasoning mode identifier (fallback chain: `gemini-4-carbon` -> `gemini-3.8-flash` with `ThinkingLevel.HIGH` -> `gemini-3.1-flash-lite`).
-
-### Automated Model Fallback Chain & Central Error Mapper
-1. **Fallback Chain**:
-   - If a preview model or free-tier quota limit is reached (limit: 0, 429, or `ResourceExhausted`), the service automatically retries the next model in the chain (`gemini-4-carbon` -> `gemini-3.8-flash` -> `gemini-3.1-flash-lite`).
-2. **Central Error Mapper & Graceful Degradation**:
-   - `SchemeSaathiAiService.mapAiErrorToFriendlyMessage`: translates raw exceptions into friendly bilingual strings ("AI is busy right now, please try again in a minute" / "AI सर्वर अभी व्यस्त है, कृपया एक मिनट बाद पुनः प्रयास करें।").
-   - Raw exception details, URLs, and stack traces are logged with `Log.e` only and never displayed to the user.
-   - If all models fail:
-     - **Chat**: gracefully falls back to the deterministic offline summary (`buildDeterministicWizardFallback`).
-
-### Zero Hardcoded API Keys
-The application stores **zero Gemini or OpenAI API keys in code, Gradle files, or resource strings**. All generative AI calls route through the official Firebase AI SDK, which authenticates through Firebase App Check and Google Play Services.
+- **Android Firebase AI SDK (`SchemeSaathiAiService.kt`)** — configured with verbatim model identifiers:
+  - `gemini-3.8-flash` (primary bilingual streaming chat, High Thinking, voice turns)
+  - `gemini-3.1-flash-lite` (low-latency fallback)
+  - `gemini-3.8-flash-tts` (TTS script generation paired with Android `TextToSpeech` `hi-IN` / `en-IN`)
+  - `gemini-4-carbon` (deep reasoning chain: `gemini-4-carbon` -> `gemini-3.8-flash` -> `gemini-3.1-flash-lite`)
+- **Zero Hardcoded API Keys**: Android contains zero Gemini/OpenAI API keys in source, Gradle, or resource XML. Backend `/api/v1/ai/*` optionally reads `GEMINI_API_KEY` from environment variables on the server and automatically falls back to deterministic grounded answers if unconfigured or unavailable.
 
 ---
 
-## 📸 Demo & Screenshots
+## 📖 API Documentation (OpenAPI / Swagger)
 
-> **📹 Video Walkthrough**: `TODO: Add your YouTube / Loom / Google Drive demo video link here`
-
-| Screen | Description | Path |
-|---|---|---|
-| **Google Auth Gate** | Clean Credential Manager sign-in with privacy notice | `docs/screenshots/01_auth_gate.png` |
-| **Home Dashboard** | Citizen welfare overview, scheme cards, audio summary | `docs/screenshots/02_home_dashboard.png` |
-| **Eligibility Results** | Rule-by-rule breakdown with state overrides & missing fields | `docs/screenshots/03_eligibility_breakdown.png` |
-| **Bilingual AI Chat** | Multi-turn streaming chat grounded in deterministic engine facts | `docs/screenshots/04_ai_chat.png` |
-| **Voice Echo Gate** | Hindi spoken numeral input with mandatory confirmation gate | `docs/screenshots/05_voice_confirmation.png` |
-| **Review & Handoff** | SHA-256 snapshot hash, citizen confirmation, and CSC handoff pack | `docs/screenshots/06_human_confirmation_gate.png` |
-
-*(Place screenshot images in `docs/screenshots/` to display in your repository).*
+When `/backend` is running (default `http://localhost:4000`):
+- **Swagger UI**: `http://localhost:4000/api/docs`
+- **OpenAPI 3.0 Spec (JSON / YAML)**: `http://localhost:4000/api/openapi.json` and [backend/openapi.yaml](backend/openapi.yaml)
+- **Health Check**: `GET /health`
+- **Versioned Endpoints (`/api/v1`)**:
+  - `POST /auth/demo-login`, `POST /auth/logout`, `GET /auth/me`
+  - `GET /profile`, `PUT /profile`, `GET /profile/export` (DPDP export)
+  - `GET /schemes`, `POST /schemes/evaluate`
+  - `GET /checklists/:schemeId`, `PUT /checklists/:schemeId`
+  - `GET /applications`, `POST /applications`, `PATCH /applications/:id/review`
+  - `GET /tasks`, `POST /tasks`, `PATCH /tasks/:id`
+  - `POST /ai/chat`, `POST /ai/voice-summary`
+  - `GET /audit`, `GET /audit/export`
 
 ---
 
 ## 📱 Tech Stack & Versions
 
-- **Language**: Kotlin 2.2.10
-- **Android Gradle Plugin (AGP)**: 9.1.1
-- **Compile SDK**: 36
-- **Target SDK**: 36
-- **Min SDK**: 24 (Android 7.0+)
-- **JDK Compatibility**: Java 11 bytecode compatibility (`sourceCompatibility = JavaVersion.VERSION_11`, built with JDK 17/21)
-- **UI Toolkit**: Jetpack Compose with Material Design 3 (M3)
-- **Authentication**: Android Jetpack `CredentialManager` (Google Sign-In) + Firebase Auth
-- **Database**: Cloud Firestore with real-time snapshot listeners
-- **App Integrity**: Firebase App Check (`DebugAppCheckProviderFactory` + `RecaptchaAppCheckProviderFactory`)
-- **Generative AI**: Firebase AI SDK (`Firebase.ai`)
-- **Audio & Voice**: Android `TextToSpeech` + Gemini TTS script synthesis
+- **Backend (`/backend`)**: Node.js, TypeScript 5.7, Express 4.21, Zod 3.24, JWT (`jsonwebtoken`), SQLite (`node:sqlite`) & PostgreSQL 16 (`pg`), Swagger UI, Vitest, Supertest.
+- **Web PWA (`/web`)**: Next.js 15.3 (App Router, standalone output), React 19, TypeScript 5.8, Tailwind CSS v4, Lucide Icons, PWA manifest & service worker, Playwright E2E.
+- **Shared (`/shared`)**: Design tokens (`tokens.json` / `tokens.css`), bilingual EN/HI dictionaries, typed TypeScript API client (`shared/api-client/index.ts`).
+- **Android (`/app`)**: Kotlin 2.2.10, AGP 9.1.1, Jetpack Compose Material 3, compileSdk 36 / targetSdk 36 / minSdk 24, Room offline cache, OkHttp, Android Keystore, CredentialManager + Firebase Auth, Cloud Firestore, Firebase App Check, Firebase AI SDK.
 
 ---
 
-## 🚀 Building from Source
+## 🧪 Testing & Verification
 
-### Prerequisites
-- **JDK**: Java 17 or Java 21
-- **Android Studio**: Ladybug / Meerkat or command-line Android SDK (API 36 / Build Tools 36.0.0)
-- **Android Device / Emulator**: Android 7.0+ (API level 24 or higher)
-
-### 1. Build the Debug APK
-```powershell
-# Windows
-copy app\google-services.json.example app\google-services.json
-.\gradlew.bat assembleDebug
-
-# Linux / macOS
-cp app/google-services.json.example app/google-services.json
-chmod +x gradlew
-./gradlew assembleDebug
-```
-The resulting APK will be generated at:
-```
-app/build/outputs/apk/debug/app-debug.apk
-```
-
-> **Note on Keystores for Fresh Clones**: `app/build.gradle.kts` automatically detects whether a local custom keystore exists. If absent, it gracefully defaults to standard Android debug signing so the project builds out of the box on any fresh clone without manual keystore configuration.
-
-### 2. Connecting Your Own Firebase Project
-To test live Google Sign-In and Cloud Firestore with your own Firebase project:
-1. Go to the [Firebase Console](https://console.firebase.google.com/) and create a project.
-2. Register an Android App with package name:
-   ```
-   com.aistudio.schemesaathi.kxmzpq
-   ```
-3. Add your debug SHA-1 signing certificate fingerprint.
-4. Enable **Google** under **Authentication → Sign-in method**.
-5. Download your real `google-services.json` and place it in the `app/` folder.
+| Suite | Command | Latest Observed Result |
+|---|---|---|
+| **Backend Lint & Type Build** | `cd backend && npm run lint && npm run build` | **PASS** (0 lint errors/warnings, `dist/` built cleanly) |
+| **Backend Unit & API Integration** | `cd backend && npm test` | **PASS** (`2` files, `15 passed`: `eligibility.test.ts` 9 + `api.integration.test.ts` 6) |
+| **Shared Types Check** | `backend\node_modules\.bin\tsc.cmd -p shared\tsconfig.json` | **PASS** (exit code 0) |
+| **Web PWA Lint & Build** | `cd web && npm run lint && npm run build` | **PASS** (0 ESLint errors/warnings; 11 routes built cleanly) |
+| **Web E2E (Playwright Chromium)** | `cd web && npm run test:e2e` | **PASS** (`1 passed` full flow: catalog, EN/HI switch, login, DOB validation, profile, 3-checkbox Handoff Pack, AI block, Reviewer RBAC approval) |
+| **Android Build & JVM/Robolectric Tests** | `.\gradlew.bat assembleDebug testDebugUnitTest --tests "com.example.Phase5ParityTest" --tests "com.example.util.DateUtilsTest" --tests "com.example.ExampleUnitTest" --tests "com.example.ExampleRobolectricTest"` | **PASS** (`17 passed`: `DateUtilsTest` 13, `Phase5ParityTest` 2, `ExampleUnitTest` 1, `ExampleRobolectricTest` 1) |
+| **Android & Firestore Emulator Rules** | `cd backend && npm run test:rules` and `SchemeSaathiRepositoryRuleTest` | **Emulator-dependent** (not executed in local CI run because Firebase Emulator Java runtime for `127.0.0.1:8085` is not started automatically) |
 
 ---
 
-## 🧪 Testing
+## 🚀 Deployment
 
-### 1. Android Unit Tests
-Run local JVM unit tests via Gradle:
-```powershell
-# Run pure JVM unit tests:
-.\gradlew.bat testDebugUnitTest --tests com.example.ExampleUnitTest
-```
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for step-by-step instructions covering:
+- Production **Docker Compose** (PostgreSQL 16 + Backend + Web PWA)
+- Bare-metal / VM deployment & health checks
+- Android signed Release `.aab` / `.apk` build & API endpoint configuration
 
-> **Test Suite Status & Emulator Dependency**:
-> - **Pure JVM Unit Tests (`com.example.ExampleUnitTest`)**: **PASS ✅** (`addition_isCorrect`).
-> - **Robolectric Firestore Tests (`SchemeSaathiRepositoryRuleTest.kt`)**: Extends `FirestoreEmulatorTestBase.kt` which connects to `127.0.0.1:8085`. This suite requires the local Firestore Emulator to be running; running without the emulator will cause connection timeouts.
-
-### 2. Backend Firestore Security Rules Unit Tests
-The repository includes an automated rules test suite (`backend/tests/firestore.test.js`) verifying zero-trust access control:
-- Unauthenticated users cannot read or write profiles, applications, or tasks.
-- Users can only access their own user-scoped subcollections (`users/{userId}/*`).
-- 12-digit Aadhaar fields are strictly rejected at the database rule boundary.
-
-```bash
-cd backend
-npm ci
-npm test
-```
-- **Requirements**: Node.js 18+ and Java 11+ (required by the Firestore emulator engine).
-- **Environment Status**: The `npm test` script runs `firebase emulators:exec --only firestore "node --test tests/firestore.test.js"` using the local `firebase-tools` devDependency. Full emulator execution was **not run** during build verification due to absence of the local Firestore emulator runtime.
-
----
-
-## 🗺️ Future Roadmap
-
-- [ ] **DigiLocker Integration**: Direct citizen-authorized retrieval of land records (Bhulekh) and caste/income certificates via the official DigiLocker API.
-- [ ] **Pan-India Scheme Expansion**: Expand rule catalog from the initial 5 schemes to 50+ state welfare schemes covering education, disability, and housing across all states.
-- [ ] **Offline Edge Voice Models**: Incorporate on-device Whisper or Gemini Nano models for speech recognition in remote rural areas with no 4G/5G connectivity.
-- [ ] **UMANG / CSC API Bridge**: Guided direct handoff into official state service delivery portals through UMANG APIs.
-
----
-
-## 👥 Team & Contributors
-
-- **Lead Developer**: Krunal Chikhale — *Full-Stack Android, Jetpack Compose, Firebase & AI Grounding*
-- **Team / Collaborators**: `TODO: Add additional team members or leave as individual project`
-- **Mentor / Guide**: `TODO: Add Project Guide / Mentor Name`
+For the phase-by-phase verification matrix, see [CHECKLIST.md](CHECKLIST.md).
 
 ---
 
@@ -344,50 +230,35 @@ npm test
 
 ```
 saathi/
-├── app/
-│   ├── google-services.json.example   # Safe Firebase template for fresh clones
-│   ├── build.gradle.kts               # Android application configuration & dependencies
-│   └── src/main/
-│       ├── AndroidManifest.xml        # Permissions, themes, Application declaration
-│       ├── java/com/example/
-│       │   ├── MainActivity.kt        # Edge-to-edge entry point, App Check init, compose root
-│       │   ├── ai/
-│       │   │   └── SchemeSaathiAiService.kt   # Multi-model Gemini grounding & TTS engine
-│       │   ├── data/
-│       │   │   ├── model/SchemeModels.kt      # CitizenProfile, Scheme, Application, Task models
-│       │   │   └── repository/                # Cloud Firestore sync & error handler
-│       │   ├── domain/
-│       │   │   └── EligibilityEngine.kt       # 5-scheme deterministic rule engine
-│       │   ├── ui/
-│       │   │   ├── auth/AuthComponents.kt     # CredentialManager Google Sign-In button
-│       │   │   ├── screens/                   # 15 Jetpack Compose screens
-│       │   │   └── theme/                     # Civic color palette, typography & theme
-│       │   └── util/
-│       │       ├── AppCheckInitializer.kt     # Debug & production Firebase App Check setup
-│       │       └── SecurityUtils.kt           # AES-256-GCM, Aadhaar guard, SHA-256 snapshot
-│       └── res/                               # Hindi/English strings, drawables, XML layouts
-├── backend/                                   # Firebase configuration & security rules
-│   ├── firestore.rules                        # Zero-trust Cloud Firestore security rules
-│   ├── firebase.json                          # Emulator & database configuration
-│   ├── firebase-blueprint.json                # Schema and data model blueprint
-│   ├── package.json                           # Rules testing scripts & local firebase-tools
-│   ├── package-lock.json                      # Locked dependencies for npm ci
-│   └── tests/
-│       └── firestore.test.js                  # Rules unit test suite (@firebase/rules-unit-testing)
-├── docs/                                      # Architecture, assumptions, and design notes
-│   ├── demo/                                  # Demo video link & demonstration walkthrough
-│   │   └── README.md
-│   ├── screenshots/                           # Directory for user interface screen captures
-│   │   └── .gitkeep
-│   ├── ARCHITECTURE.md                        # Architectural specification
-│   ├── ASSUMPTIONS.md                         # Verification boundaries & assumptions
-│   ├── PROGRESS.md                            # Development progress tracker
-│   └── SECURITY_AUDIT_FINDINGS.csv            # Security audit findings report
-├── .env.example                               # Environment configuration template
-├── LICENSE                                    # MIT License (Krunal Chikhale)
-├── build.gradle.kts                           # Root Gradle project configuration
-├── settings.gradle.kts                        # Plugin and repository management
-└── gradlew / gradlew.bat                      # Gradle wrapper executables
+├── app/                         # Native Android Kotlin + Jetpack Compose app
+│   ├── src/main/java/com/example/
+│   │   ├── ai/                  # SchemeSaathiAiService (Firebase AI SDK + fallback)
+│   │   ├── data/local/          # Room offline checklist cache (SchemeSaathiDatabase)
+│   │   ├── data/remote/         # OkHttp shared REST API client (BackendApiClient)
+│   │   ├── data/model/          # SchemeModels
+│   │   ├── data/repository/     # Firestore sync & redacted ErrorHandler
+│   │   ├── domain/              # Deterministic EligibilityEngine
+│   │   ├── security/            # Android Keystore JWT store (TokenStore)
+│   │   ├── ui/                  # Compose screens, ViewModel, Civic theme
+│   │   └── util/                # SecurityUtils, DateUtils, NotificationHelper, AppCheck
+│   └── src/test/java/           # Phase5ParityTest, DateUtilsTest, Robolectric & Unit tests
+├── backend/                     # Shared REST API, eligibility engine, SQL migrations & Firebase rules
+│   ├── src/                     # Express app, routes, crypto/piiGuard, SQLite/PG adapter
+│   ├── openapi.yaml             # OpenAPI 3.0 contract (served at /api/docs)
+│   ├── tests/                   # Vitest unit/integration tests + Firestore rules tests
+│   └── Dockerfile
+├── web/                         # Responsive Next.js 15 PWA frontend
+│   ├── src/app/                 # Routes: /, /login, /profile, /chat, /apply, /alerts, /settings, /operator
+│   ├── public/                  # PWA manifest.webmanifest, sw.js, icon.svg
+│   ├── tests/e2e/               # Playwright end-to-end tests
+│   └── Dockerfile
+├── shared/                      # Shared design tokens (JSON/CSS), EN/HI i18n, typed TypeScript client
+├── docs/                        # AUDIT.md, ARCHITECTURE.md, DEPLOYMENT.md, ASSUMPTIONS.md
+├── .github/workflows/ci.yml     # CI pipeline (backend, web build + E2E, Android debug + unit tests)
+├── docker-compose.yml           # PostgreSQL 16 + Backend + Web stack
+├── CHECKLIST.md                 # End-to-end delivery & verification checklist
+├── .env.example                 # Documented environment template
+└── LICENSE                      # MIT License
 ```
 
 ---

@@ -144,8 +144,8 @@ Per [docs/AUDIT.md](docs/AUDIT.md) and the current implementation:
 
 ### 1. Clone & Configure Environment
 ```bash
-git clone https://github.com/ENTRYDOWN99/saathi.git
-cd saathi
+git clone https://github.com/omdubey07/scheme-sathi.git
+cd scheme-sathi
 cp .env.example .env
 ```
 *(In PowerShell on Windows: `copy .env.example .env`.)*

@@ -2,7 +2,7 @@ FROM node:24-alpine AS builder
 WORKDIR /app/backend
 
 COPY backend/package*.json ./
-RUN npm ci
+RUN npm ci --include=dev
 
 COPY backend/tsconfig.json ./
 COPY backend/scripts ./scripts

@@ -59,9 +59,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.data.local.SchemeSaathiDatabase
 import com.example.data.model.CollaborativeTask
 import com.example.data.model.SchemeApplication
+import com.example.data.remote.BackendApiClient
 import com.example.data.repository.SchemeSaathiRepository
+import com.example.security.TokenStore
+import com.example.util.NotificationHelper
 import com.example.ui.auth.attemptAutoSignIn
 import com.example.ui.auth.signOutUser
 import com.example.ui.screens.AiChatScreen
@@ -195,9 +199,19 @@ fun SchemeSaathiRootApp() {
                         } catch (e: Exception) {
                             FirebaseFirestore.getInstance()
                         }
+                        val appContext = context.applicationContext
+                        val localDb = SchemeSaathiDatabase.getInstance(appContext)
+                        val tokenStore = TokenStore(appContext)
+                        val backendClient = BackendApiClient(tokenStore)
                         SchemeSaathiViewModel(
                             repository = SchemeSaathiRepository(db, FirebaseAuth.getInstance()),
-                            currentUserId = uid
+                            currentUserId = uid,
+                            localDb = localDb,
+                            tokenStore = tokenStore,
+                            backendClient = backendClient,
+                            onNotifyTask = { title, body ->
+                                NotificationHelper.showTaskNotification(appContext, title, body)
+                            }
                         )
                     }
                 }
@@ -223,6 +237,7 @@ fun AuthenticatedSchemeSaathiApp(
     val currentScreen by viewModel.currentScreen.collectAsStateWithLifecycle()
     val language by viewModel.language.collectAsStateWithLifecycle()
     val largeTextMode by viewModel.largeTextMode.collectAsStateWithLifecycle()
+    val darkThemeMode by viewModel.darkThemeMode.collectAsStateWithLifecycle()
     val selectedSchemeId by viewModel.selectedSchemeId.collectAsStateWithLifecycle()
     val selectedModelMode by viewModel.selectedModelMode.collectAsStateWithLifecycle()
     val statusBanner by viewModel.statusBanner.collectAsStateWithLifecycle()
@@ -276,7 +291,7 @@ fun AuthenticatedSchemeSaathiApp(
         }
     }
 
-    SchemeSaathiTheme(largeTextMode = largeTextMode) {
+    SchemeSaathiTheme(darkTheme = darkThemeMode, largeTextMode = largeTextMode) {
         Scaffold(
             contentWindowInsets = WindowInsets.safeDrawing,
             topBar = {
@@ -596,7 +611,8 @@ fun AuthenticatedSchemeSaathiApp(
                         language = language,
                         applications = applicationsList,
                         onUpdateStatus = viewModel::updateApplicationStatus,
-                        onNavigate = viewModel::navigateTo
+                        onNavigate = viewModel::navigateTo,
+                        activeRole = editableProfile.role
                     )
                     AppScreen.ALERTS_SETTINGS -> AlertsAndSettingsScreen(
                         language = language,
@@ -609,6 +625,21 @@ fun AuthenticatedSchemeSaathiApp(
                         onCancelTask = viewModel::cancelTaskReminder,
                         onSignOut = {
                             signOutUser(credentialManager, scope)
+                        },
+                        darkThemeMode = darkThemeMode,
+                        onToggleDarkTheme = viewModel::toggleDarkThemeMode,
+                        onBackendDemoSignIn = viewModel::backendDemoSignIn,
+                        onExportDpdpJson = {
+                            viewModel.exportDpdpBundleJson { bundle ->
+                                val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                    type = "application/json"
+                                    putExtra(android.content.Intent.EXTRA_SUBJECT, "SchemeSaathi_DPDP_Export.json")
+                                    putExtra(android.content.Intent.EXTRA_TEXT, bundle)
+                                }
+                                context.startActivity(
+                                    android.content.Intent.createChooser(shareIntent, "Export DPDP Data")
+                                )
+                            }
                         }
                     )
                 }

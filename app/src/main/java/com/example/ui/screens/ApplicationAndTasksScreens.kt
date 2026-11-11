@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.AddAlert
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.GppGood
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Share
@@ -45,6 +46,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -540,6 +542,7 @@ fun ApplicationTrackingScreen(
     applications: List<SchemeApplication>,
     onUpdateStatus: (SchemeApplication, String, Boolean) -> Unit,
     onNavigate: (AppScreen) -> Unit,
+    activeRole: String = "CITIZEN",
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -623,18 +626,32 @@ fun ApplicationTrackingScreen(
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
+                        val isStaff = activeRole == "CSC_OPERATOR" || activeRole == "REVIEWER" || activeRole == "SUPERVISOR"
+                        val canApprove = activeRole == "REVIEWER" || activeRole == "SUPERVISOR"
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             AssistChip(
                                 onClick = { onUpdateStatus(app, "SUBMITTED_SELF_REPORTED", false) },
                                 label = { Text("Mark Self-Reported Submitted") }
                             )
-                            AssistChip(
-                                onClick = { onUpdateStatus(app, "ACKNOWLEDGED", true) },
-                                label = { Text("CSC Acknowledged (Verified)") }
-                            )
-                            AssistChip(
-                                onClick = { onUpdateStatus(app, "APPROVED", true) },
-                                label = { Text("Approved (Verified)") }
+                            if (isStaff) {
+                                AssistChip(
+                                    onClick = { onUpdateStatus(app, "ACKNOWLEDGED", true) },
+                                    label = { Text("CSC Acknowledged (Verified)") }
+                                )
+                            }
+                            if (canApprove) {
+                                AssistChip(
+                                    onClick = { onUpdateStatus(app, "APPROVED", true) },
+                                    label = { Text("Approved (Verified)") }
+                                )
+                            }
+                        }
+                        if (!canApprove) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = androidx.compose.ui.res.stringResource(com.example.R.string.rbac_locked_notice),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -656,6 +673,10 @@ fun AlertsAndSettingsScreen(
     onAdvanceTask: (CollaborativeTask) -> Unit,
     onCancelTask: (CollaborativeTask) -> Unit,
     onSignOut: () -> Unit,
+    darkThemeMode: Boolean = false,
+    onToggleDarkTheme: (Boolean) -> Unit = {},
+    onBackendDemoSignIn: (String) -> Unit = {},
+    onExportDpdpJson: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -692,6 +713,51 @@ fun AlertsAndSettingsScreen(
                 Icon(Icons.Default.Logout, contentDescription = "Sign Out", modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(if (language == "hi") "लॉगआउट" else "Sign Out")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Theme, Shared Backend Role Switcher (RBAC), & DPDP Data Export Controls
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = androidx.compose.ui.res.stringResource(com.example.R.string.settings_dark_mode),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Switch(
+                        checked = darkThemeMode,
+                        onCheckedChange = onToggleDarkTheme,
+                        modifier = Modifier.testTag("dark_theme_switch")
+                    )
+                }
+                Text(
+                    text = androidx.compose.ui.res.stringResource(com.example.R.string.settings_backend_sync),
+                    style = MaterialTheme.typography.labelLarge
+                )
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf("CITIZEN", "CSC_OPERATOR", "REVIEWER", "SUPERVISOR").forEach { roleOpt ->
+                        FilterChip(
+                            selected = currentRole == roleOpt,
+                            onClick = { onBackendDemoSignIn(roleOpt) },
+                            label = { Text(roleOpt) }
+                        )
+                    }
+                }
+                OutlinedButton(
+                    onClick = onExportDpdpJson,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(androidx.compose.ui.res.stringResource(com.example.R.string.settings_dpdp_export))
+                }
             }
         }
 

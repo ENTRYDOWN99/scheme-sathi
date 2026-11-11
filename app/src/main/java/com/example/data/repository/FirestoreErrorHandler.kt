@@ -1,6 +1,7 @@
 package com.example.data.repository
 
 import android.util.Log
+import com.example.util.SecurityUtils
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestoreException
 import kotlinx.coroutines.CancellationException
@@ -28,26 +29,24 @@ fun handleFirestoreError(exception: Throwable, operationType: OperationType, pat
     val providerInfoList = currentUser?.providerData?.map { provider ->
         JSONObject().apply {
             put("providerId", provider.providerId)
-            put("email", provider.email)
         }
     } ?: emptyList()
 
     val authInfoJson = JSONObject().apply {
-        put("userId", currentUser?.uid)
-        put("email", currentUser?.email)
-        put("emailVerified", currentUser?.isEmailVerified)
-        put("tenantId", currentUser?.tenantId)
+        put("authenticated", currentUser != null)
+        put("emailVerified", currentUser?.isEmailVerified ?: false)
         put("providerInfo", JSONArray(providerInfoList))
     }
 
+    val safeMessage = SecurityUtils.redactPiiForLlm(rootError.message ?: rootError.toString())
     val errorInfoJson = JSONObject().apply {
-        put("error", rootError.message ?: rootError.toString())
+        put("error", safeMessage)
         put("operationType", operationType.value)
-        put("path", path)
+        put("path", path?.let { SecurityUtils.redactPiiForLlm(it) })
         put("authInfo", authInfoJson)
     }
 
     val jsonString = errorInfoJson.toString()
-    Log.e("FirestoreError", "Firestore Error: $jsonString")
+    Log.e("FirestoreError", "Firestore Error (${operationType.value}): $safeMessage")
     return jsonString
 }

@@ -20,6 +20,11 @@ android {
     versionCode = 1
     versionName = "1.0"
 
+    val apiBaseUrl = System.getenv("API_BASE_URL")
+      ?: project.findProperty("API_BASE_URL")?.toString()
+      ?: "http://10.0.2.2:4000/api/v1"
+    buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
+
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
 
@@ -91,6 +96,23 @@ secrets {
   propertiesFileName = ".env"
   defaultPropertiesFileName = ".env.example"
   ignoreList.add("FIREBASE_APPCHECK_DEBUG_TOKEN")
+  ignoreList.add("GEMINI_API_KEY")
+  ignoreList.add("API_BASE_URL")
+  ignoreList.add("DATABASE_URL")
+  ignoreList.add("JWT_SECRET")
+  ignoreList.add("JWT_REFRESH_SECRET")
+  ignoreList.add("PII_ENCRYPTION_KEY")
+  ignoreList.add("CORS_ORIGIN")
+  ignoreList.add("PORT")
+  ignoreList.add("NODE_ENV")
+  ignoreList.add("LOG_LEVEL")
+  ignoreList.add("GEMINI_MODEL")
+  ignoreList.add("GEMINI_FALLBACK_MODEL")
+  ignoreList.add("GEMINI_TIMEOUT_MS")
+  ignoreList.add("NEXT_PUBLIC_API_URL")
+  ignoreList.add("KEYSTORE_PATH")
+  ignoreList.add("STORE_PASSWORD")
+  ignoreList.add("KEY_PASSWORD")
 }
 
 googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.WARN }
@@ -100,10 +122,6 @@ dependencies {
   implementation(platform(libs.firebase.bom))
   // implementation(libs.accompanist.permissions)
   implementation(libs.androidx.activity.compose)
-  // implementation(libs.androidx.camera.camera2)
-  // implementation(libs.androidx.camera.core)
-  // implementation(libs.androidx.camera.lifecycle)
-  // implementation(libs.androidx.camera.view)
   implementation(libs.androidx.compose.material.icons.core)
   implementation(libs.androidx.compose.material.icons.extended)
   implementation(libs.androidx.compose.material3)
@@ -111,15 +129,12 @@ dependencies {
   implementation(libs.androidx.compose.ui.graphics)
   implementation(libs.androidx.compose.ui.tooling.preview)
   implementation(libs.androidx.core.ktx)
-  // implementation(libs.androidx.datastore.preferences)
   implementation(libs.androidx.lifecycle.runtime.compose)
   implementation(libs.androidx.lifecycle.runtime.ktx)
   implementation(libs.androidx.lifecycle.viewmodel.compose)
-  // implementation(libs.androidx.navigation.compose)
-  // implementation(libs.androidx.room.ktx)
-  // implementation(libs.androidx.room.runtime)
+  implementation(libs.androidx.room.ktx)
+  implementation(libs.androidx.room.runtime)
   implementation(libs.coil.compose)
-  // implementation(libs.converter.moshi)
   implementation(libs.firebase.ai)
   implementation(libs.firebase.firestore)
   implementation(libs.firebase.auth)
@@ -130,11 +145,7 @@ dependencies {
   implementation(libs.firebase.appcheck.debug)
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.kotlinx.coroutines.core)
-  // implementation(libs.logging.interceptor)
-  // implementation(libs.moshi.kotlin)
-  // implementation(libs.okhttp)
-  // implementation(libs.play.services.location)
-  // implementation(libs.retrofit)
+  implementation(libs.okhttp)
   testImplementation(libs.androidx.compose.ui.test.junit4)
   testImplementation(libs.androidx.core)
   testImplementation(libs.androidx.junit)
@@ -148,6 +159,5 @@ dependencies {
   androidTestImplementation(libs.androidx.runner)
   debugImplementation(libs.androidx.compose.ui.test.manifest)
   debugImplementation(libs.androidx.compose.ui.tooling)
-  // "ksp"(libs.androidx.room.compiler)
-  // "ksp"(libs.moshi.kotlin.codegen)
+  "ksp"(libs.androidx.room.compiler)
 }

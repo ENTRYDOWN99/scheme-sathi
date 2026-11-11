@@ -43,4 +43,9 @@
     <string name="dob_error_invalid_date">Please enter a valid calendar date (e.g. 31/02 is invalid)</string>
     <string name="dob_error_future">Date of birth cannot be in the future</string>
     <string name="dob_error_age_range">Age must be between 0 and 120 years</string>
+    <string name="settings_dark_mode">Dark Mode Theme</string>
+    <string name="settings_backend_sync">Shared Backend Session &amp; Role</string>
+    <string name="settings_dpdp_export">Export My Data (DPDP JSON)</string>
+    <string name="rbac_locked_notice">Reviewer/Supervisor approval requires REVIEWER or SUPERVISOR role.</string>
+    <string name="privacy_no_aadhaar_banner">Privacy Guard: Never enter a 12-digit Aadhaar number.</string>
 </resources>

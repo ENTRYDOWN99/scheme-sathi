@@ -43,4 +43,9 @@
     <string name="dob_error_invalid_date">कृपया वास्तविक कैलेंडर तिथि दर्ज करें (उदा. 31/02 अमान्य है)</string>
     <string name="dob_error_future">जन्म तिथि भविष्य की नहीं हो सकती</string>
     <string name="dob_error_age_range">उम्र 0 से 120 वर्ष के बीच होनी चाहिए</string>
+    <string name="settings_dark_mode">डार्क मोड थीम</string>
+    <string name="settings_backend_sync">साझा बैकएंड सत्र एवं भूमिका</string>
+    <string name="settings_dpdp_export">मेरा डेटा डाउनलोड करें (DPDP JSON)</string>
+    <string name="rbac_locked_notice">समीक्षा / अनुमोदन केवल REVIEWER या SUPERVISOR भूमिका के लिए है।</string>
+    <string name="privacy_no_aadhaar_banner">गोपनीयता सुरक्षा: 12-अंकीय आधार नंबर दर्ज न करें।</string>
 </resources>

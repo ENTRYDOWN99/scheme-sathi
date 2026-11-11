@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.ai.AiStreamUpdate
 import com.example.ai.GeminiModelMode
 import com.example.ai.SchemeSaathiAiService
+import com.example.data.local.CachedChecklistEntity
+import com.example.data.local.SchemeSaathiDatabase
 import com.example.data.model.AuditFinding
 import com.example.data.model.ChatMessage
 import com.example.data.model.CitizenProfile
@@ -13,8 +15,10 @@ import com.example.data.model.CollaborativeTask
 import com.example.data.model.DocumentHaveStatus
 import com.example.data.model.EligibilityEvaluationResult
 import com.example.data.model.SchemeApplication
+import com.example.data.remote.BackendApiClient
 import com.example.data.repository.SchemeSaathiRepository
 import com.example.domain.EligibilityEngine
+import com.example.security.TokenStore
 import com.example.util.DateUtils
 import com.example.util.SecurityUtils
 import com.google.firebase.firestore.FirebaseFirestoreException
@@ -62,7 +66,11 @@ data class FormFieldProvenance(
 class SchemeSaathiViewModel(
     private val repository: SchemeSaathiRepository,
     private val currentUserId: String,
-    private val aiService: SchemeSaathiAiService = SchemeSaathiAiService()
+    private val aiService: SchemeSaathiAiService = SchemeSaathiAiService(),
+    private val localDb: SchemeSaathiDatabase? = null,
+    private val tokenStore: TokenStore? = null,
+    private val backendClient: BackendApiClient? = null,
+    private val onNotifyTask: ((String, String) -> Unit)? = null
 ) : ViewModel() {
 
     private val _screenStack = MutableStateFlow(listOf(AppScreen.HOME_DASHBOARD))
@@ -74,6 +82,9 @@ class SchemeSaathiViewModel(
 
     private val _largeTextMode = MutableStateFlow(false)
     val largeTextMode: StateFlow<Boolean> = _largeTextMode.asStateFlow()
+
+    private val _darkThemeMode = MutableStateFlow(false)
+    val darkThemeMode: StateFlow<Boolean> = _darkThemeMode.asStateFlow()
 
     private val _selectedSchemeId = MutableStateFlow("PM-KISAN")
     val selectedSchemeId: StateFlow<String> = _selectedSchemeId.asStateFlow()
@@ -346,6 +357,34 @@ class SchemeSaathiViewModel(
 
     fun toggleLargeTextMode(enabled: Boolean) {
         _largeTextMode.value = enabled
+    }
+
+    fun toggleDarkThemeMode(enabled: Boolean) {
+        _darkThemeMode.value = enabled
+    }
+
+    init {
+        // Hydrate persistent offline checklist items from Room & restore Keystore role if present
+        tokenStore?.getSavedRole()?.let { savedRole ->
+            if (savedRole.isNotBlank() && savedRole != _editableProfile.value.role) {
+                _editableProfile.value = _editableProfile.value.copy(role = savedRole)
+            }
+        }
+        if (localDb != null) {
+            viewModelScope.launch {
+                val cached = localDb.checklistDao().getAllForUser(currentUserId)
+                if (cached.isNotEmpty()) {
+                    val map = _documentStatuses.value.toMutableMap()
+                    cached.forEach { entity ->
+                        val parsed = runCatching { DocumentHaveStatus.valueOf(entity.status) }.getOrNull()
+                        if (parsed != null) {
+                            map[entity.documentId] = parsed
+                        }
+                    }
+                    _documentStatuses.value = map
+                }
+            }
+        }
     }
 
     fun selectScheme(schemeId: String) {
@@ -645,6 +684,61 @@ class SchemeSaathiViewModel(
         _documentStatuses.value = _documentStatuses.value.toMutableMap().apply {
             put(docId, status)
         }
+        val schemeId = _selectedSchemeId.value
+        viewModelScope.launch {
+            localDb?.checklistDao()?.upsert(
+                CachedChecklistEntity(
+                    userId = currentUserId,
+                    schemeId = schemeId,
+                    documentId = docId,
+                    status = status.name
+                )
+            )
+            backendClient?.upsertChecklistItem(schemeId, docId, status.name)
+        }
+    }
+
+    fun backendDemoSignIn(role: String) {
+        viewModelScope.launch {
+            val client = backendClient
+            if (client == null) {
+                _editableProfile.value = _editableProfile.value.copy(role = role)
+                _statusBanner.value = "Role switched locally to $role"
+                return@launch
+            }
+            client.demoLogin(role).onSuccess { auth ->
+                _editableProfile.value = _editableProfile.value.copy(role = auth.role)
+                _statusBanner.value = "✅ Connected to shared backend as ${auth.role}"
+            }.onFailure { err ->
+                // Allow local RBAC testing even if desktop backend server is stopped
+                _editableProfile.value = _editableProfile.value.copy(role = role)
+                _statusBanner.value = "Switched role locally to $role (Backend offline: ${err.message?.take(40) ?: "N/A"})"
+            }
+        }
+    }
+
+    fun exportDpdpBundleJson(onExportReady: (String) -> Unit) {
+        viewModelScope.launch {
+            val client = backendClient
+            val liveResult = client?.exportMyDpdpJson()?.getOrNull()
+            if (!liveResult.isNullOrBlank()) {
+                onExportReady(liveResult)
+                return@launch
+            }
+            val p = _editableProfile.value
+            val localBundle = """
+                {
+                  "userId": "$currentUserId",
+                  "role": "${p.role}",
+                  "state": "${p.state}",
+                  "district": "${p.district}",
+                  "dateOfBirth": "${decryptedDob.value}",
+                  "documentChecklistCount": ${_documentStatuses.value.size},
+                  "note": "Offline DPDP structured citizen archive"
+                }
+            """.trimIndent()
+            onExportReady(localBundle)
+        }
     }
 
     // --- APPLICATION PREPARATION & HUMAN CONFIRMATION GATE ---
@@ -797,6 +891,7 @@ class SchemeSaathiViewModel(
         viewModelScope.launch {
             try {
                 repository.createTask(task)
+                onNotifyTask?.invoke(task.title, task.description)
                 _statusBanner.value = "✅ Collaborative task & reminder scheduled ($deliveryChannel)"
             } catch (e: CancellationException) {
                 throw e

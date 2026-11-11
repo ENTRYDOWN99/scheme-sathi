@@ -24,7 +24,7 @@ import com.example.data.model.RuleOperator
  */
 object EligibilityEngine {
 
-    private const val REFERENCE_YEAR = 2026
+    fun currentReferenceYear(): Int = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
 
     val initialFiveSchemes: List<GovernmentScheme> = listOf(
         // 1. PM-KISAN
@@ -484,7 +484,7 @@ object EligibilityEngine {
     fun evaluateScheme(
         profile: CitizenProfile,
         scheme: GovernmentScheme,
-        currentYear: Int = REFERENCE_YEAR
+        currentYear: Int = currentReferenceYear()
     ): EligibilityEvaluationResult {
         val conditionResults = mutableListOf<ConditionResult>()
         val missingFields = linkedSetOf<String>()
@@ -520,7 +520,7 @@ object EligibilityEngine {
 
     fun evaluateAllSchemes(
         profile: CitizenProfile,
-        currentYear: Int = REFERENCE_YEAR
+        currentYear: Int = currentReferenceYear()
     ): List<EligibilityEvaluationResult> {
         return initialFiveSchemes.map { scheme ->
             evaluateScheme(profile, scheme, currentYear)

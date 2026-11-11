@@ -24,14 +24,19 @@ SchemeSaathi.apk
 local.properties
 /local.properties
 .env
-.env.local
+.env.*
+!.env.example
 
-# Firebase Configuration (Keep example, ignore actual credentials)
+# Firebase & Service Account Credentials (Keep example, ignore actual credentials)
+google-services.json
 app/google-services.json
+!google-services.json.example
+service-account*.json
 
 # Dependencies & Node / Web / Backend Artifacts
 node_modules/
 .next/
+.netlify/
 web/out/
 dist/
 backend/data/
@@ -44,4 +49,5 @@ test-results/
 
 # IDE & Editor Specific
 .idea/
+.vscode/
 *.DS_Store

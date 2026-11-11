@@ -34,4 +34,13 @@
     <string name="ai_error_network">Please check your internet connection and try again.</string>
     <string name="ai_error_generic">AI service is temporarily unavailable. Please try again shortly.</string>
     <string name="ai_safety_human_gate">Safety Guardrail (Human Confirmation Gate): Scheme Saathi AI is strictly prohibited from auto-submitting government applications. Per security and governance policies, citizen welfare submissions require mandatory human review on the Review &amp; Confirm screen with a verifiable SHA-256 snapshot hash.</string>
+
+    <!-- Date of Birth -->
+    <string name="dob_label">Date of Birth</string>
+    <string name="dob_format_hint">DD/MM/YYYY</string>
+    <string name="dob_calendar_description">Select Date from Calendar</string>
+    <string name="dob_error_invalid_format">Please enter a valid date of birth (DD/MM/YYYY)</string>
+    <string name="dob_error_invalid_date">Please enter a valid calendar date (e.g. 31/02 is invalid)</string>
+    <string name="dob_error_future">Date of birth cannot be in the future</string>
+    <string name="dob_error_age_range">Age must be between 0 and 120 years</string>
 </resources>

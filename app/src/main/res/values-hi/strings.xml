@@ -34,4 +34,13 @@
     <string name="ai_error_network">कृपया अपना इंटरनेट कनेक्शन जांचें और पुनः प्रयास करें।</string>
     <string name="ai_error_generic">AI सेवा अस्थायी रूप से अनुपलब्ध है। कृपया थोड़ी देर बाद प्रयास करें।</string>
     <string name="ai_safety_human_gate">सुरक्षा नीति (Human Confirmation Gate): स्कीम साथी एआई को सरकारी आवेदन सीधे जमा या पुष्टि करने की अनुमति नहीं है। सरकारी नियमों के अनुसार, नागरिक या अधिकृत ऑपरेटर को \'समीक्षा व पुष्टि\' स्क्रीन पर व्यक्तिगत रूप से जांच कर पुष्टि करनी होती है।</string>
+
+    <!-- Date of Birth -->
+    <string name="dob_label">जन्म तिथि</string>
+    <string name="dob_format_hint">DD/MM/YYYY</string>
+    <string name="dob_calendar_description">कैलेंडर से जन्म तिथि चुनें</string>
+    <string name="dob_error_invalid_format">कृपया वैध जन्म तिथि (DD/MM/YYYY) दर्ज करें</string>
+    <string name="dob_error_invalid_date">कृपया वास्तविक कैलेंडर तिथि दर्ज करें (उदा. 31/02 अमान्य है)</string>
+    <string name="dob_error_future">जन्म तिथि भविष्य की नहीं हो सकती</string>
+    <string name="dob_error_age_range">उम्र 0 से 120 वर्ष के बीच होनी चाहिए</string>
 </resources>

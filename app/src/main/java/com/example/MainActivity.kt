@@ -230,6 +230,7 @@ fun AuthenticatedSchemeSaathiApp(
     val editableProfile by viewModel.editableProfile.collectAsStateWithLifecycle()
     val decryptedName by viewModel.decryptedName.collectAsStateWithLifecycle()
     val decryptedPhone by viewModel.decryptedPhone.collectAsStateWithLifecycle()
+    val decryptedDob by viewModel.decryptedDob.collectAsStateWithLifecycle()
 
     // Collect Firestore streams
     val profileUiState by viewModel.profileUiState.collectAsStateWithLifecycle()
@@ -488,7 +489,9 @@ fun AuthenticatedSchemeSaathiApp(
                         profile = editableProfile,
                         decryptedName = decryptedName,
                         decryptedPhone = decryptedPhone,
+                        decryptedDob = decryptedDob,
                         onUpdateProfile = viewModel::updateEditableProfile,
+                        onUpdateDob = viewModel::updateDob,
                         onSaveToCloud = viewModel::saveCitizenProfileToCloud,
                         onNavigate = viewModel::navigateTo
                     )

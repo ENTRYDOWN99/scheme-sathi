@@ -19,6 +19,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.GppGood
@@ -32,14 +33,21 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -57,6 +65,10 @@ import com.example.R
 import com.example.data.model.CitizenProfile
 import com.example.ui.auth.GoogleSignInButton
 import com.example.ui.viewmodel.AppScreen
+import com.example.util.DateUtils
+import com.example.util.SecurityUtils
+import java.util.Calendar
+import java.util.TimeZone
 
 @Composable
 fun AuthGateScreen(
@@ -522,19 +534,24 @@ fun ConsentScreen(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileSetupScreen(
     language: String,
     profile: CitizenProfile,
     decryptedName: String,
     decryptedPhone: String,
+    decryptedDob: String = "",
     onUpdateProfile: (String, String, (CitizenProfile) -> CitizenProfile) -> Unit,
+    onUpdateDob: ((String) -> Unit)? = null,
     onSaveToCloud: () -> Unit,
     onNavigate: (AppScreen) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var birthYearInput by remember(profile.birthYear) { mutableStateOf(profile.birthYear.toString()) }
+    var dobInput by remember(decryptedDob) { mutableStateOf(decryptedDob) }
+    var dobError by remember { mutableStateOf<String?>(null) }
+    var showDatePicker by remember { mutableStateOf(false) }
+
     var incomeInput by remember(profile.annualIncome) {
         mutableStateOf(if (profile.annualIncome >= 0) profile.annualIncome.toString() else "")
     }
@@ -542,6 +559,88 @@ fun ProfileSetupScreen(
 
     val statesList = listOf("Uttar Pradesh", "Bihar", "Maharashtra", "Madhya Pradesh", "Rajasthan", "Delhi")
     val rolesList = listOf("CITIZEN", "CSC_OPERATOR", "SUPERVISOR", "REVIEWER")
+
+    val currentCalculatedAge = remember(dobInput, profile.birthYear) {
+        if (dobInput.isNotBlank() && DateUtils.validateDob(dobInput) is DateUtils.DobValidationResult.Valid) {
+            DateUtils.calculateAge(dobInput)
+        } else {
+            profile.resolveAge()
+        }
+    }
+
+    val dobLabelText = if (currentCalculatedAge in 0..120) {
+        if (language == "hi") "जन्म तिथि (उम्र: $currentCalculatedAge)" else "Date of Birth (Age: $currentCalculatedAge)"
+    } else {
+        if (language == "hi") "जन्म तिथि (DD/MM/YYYY)" else "Date of Birth (DD/MM/YYYY)"
+    }
+
+    if (showDatePicker) {
+        val initialMillis = remember(dobInput) {
+            val parsed = DateUtils.parseDob(dobInput)
+            if (parsed != null && parsed.month in 1..12 && parsed.day in 1..31) {
+                Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+                    clear()
+                    set(parsed.year, parsed.month - 1, parsed.day)
+                }.timeInMillis
+            } else {
+                Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+                    clear()
+                    set(1964, 0, 1)
+                }.timeInMillis
+            }
+        }
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = initialMillis,
+            selectableDates = object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                    return utcTimeMillis <= System.currentTimeMillis()
+                }
+            }
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+                                timeInMillis = millis
+                            }
+                            val day = cal.get(Calendar.DAY_OF_MONTH)
+                            val month = cal.get(Calendar.MONTH) + 1
+                            val year = cal.get(Calendar.YEAR)
+                            val formatted = "%02d/%02d/%04d".format(day, month, year)
+                            dobInput = formatted
+                            dobError = null
+                            val encDob = SecurityUtils.encryptPii(formatted, profile.userId)
+                            onUpdateProfile(decryptedName, decryptedPhone) {
+                                it.copy(
+                                    encryptedDob = encDob,
+                                    birthYear = year,
+                                    ageConfirmedViaVoice = true
+                                )
+                            }
+                            onUpdateDob?.invoke(formatted)
+                        }
+                        showDatePicker = false
+                    },
+                    modifier = Modifier.testTag("dob_datepicker_confirm_btn")
+                ) {
+                    Text(if (language == "hi") "पुष्टि करें" else "OK")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDatePicker = false },
+                    modifier = Modifier.testTag("dob_datepicker_cancel_btn")
+                ) {
+                    Text(if (language == "hi") "रद्द करें" else "Cancel")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
 
     Column(
         modifier = modifier
@@ -590,19 +689,61 @@ fun ProfileSetupScreen(
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedTextField(
-                value = birthYearInput,
-                onValueChange = { yrStr ->
-                    birthYearInput = yrStr
-                    val yr = yrStr.toIntOrNull()
-                    if (yr != null && yr in 1910..2026) {
-                        onUpdateProfile(decryptedName, decryptedPhone) {
-                            it.copy(birthYear = yr, ageConfirmedViaVoice = true)
+                value = dobInput,
+                onValueChange = { raw ->
+                    val formatted = DateUtils.formatDobInput(raw)
+                    dobInput = formatted
+                    val result = DateUtils.validateDob(formatted)
+                    dobError = DateUtils.getValidationErrorMessage(result, language)
+                    if (result is DateUtils.DobValidationResult.Valid) {
+                        val parsed = DateUtils.parseDob(formatted)
+                        if (parsed != null) {
+                            val encDob = SecurityUtils.encryptPii(formatted, profile.userId)
+                            onUpdateProfile(decryptedName, decryptedPhone) {
+                                it.copy(
+                                    encryptedDob = encDob,
+                                    birthYear = parsed.year,
+                                    ageConfirmedViaVoice = true
+                                )
+                            }
+                            onUpdateDob?.invoke(formatted)
                         }
                     }
                 },
-                label = { Text(if (language == "hi") "जन्म वर्ष (उम्र: ${2026 - profile.birthYear})" else "Birth Year (Age: ${2026 - profile.birthYear})") },
+                label = { Text(dobLabelText) },
+                placeholder = { Text("DD/MM/YYYY") },
+                trailingIcon = {
+                    IconButton(
+                        onClick = { showDatePicker = true },
+                        modifier = Modifier.testTag("dob_calendar_picker_btn")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CalendarMonth,
+                            contentDescription = if (language == "hi") "कैलेंडर से जन्म तिथि चुनें" else "Select Date from Calendar",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                },
+                isError = dobError != null,
+                supportingText = {
+                    if (dobError != null) {
+                        Text(
+                            text = dobError!!,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    } else if (dobInput.isBlank()) {
+                        Text(
+                            text = if (language == "hi") "कृपया जन्म तिथि दर्ज करें" else "Please complete DOB",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
+                singleLine = true,
                 modifier = Modifier
-                    .weight(1f)
+                    .weight(1.1f)
+                    .testTag("profile_dob_input")
                     .testTag("profile_birth_year_input")
             )
 
@@ -618,7 +759,7 @@ fun ProfileSetupScreen(
                 label = { Text(if (language == "hi") "वार्षिक आय (₹)" else "Annual Income (₹)") },
                 placeholder = { Text("Blank = UNKNOWN") },
                 modifier = Modifier
-                    .weight(1f)
+                    .weight(0.9f)
                     .testTag("profile_income_input")
             )
         }

@@ -162,12 +162,16 @@ Security and citizen protection are built into the foundation of Scheme Saathi:
 - **Database Schema Enforcement** (`backend/firestore.rules`): Firestore rules use `incoming().keys().hasOnly([...])` strict field validation. Any document containing an unauthorized field such as `aadhaar` is rejected at the database boundary.
 
 ### 2. Field-Level AES-256-GCM Encryption
-- Sensitive citizen identifiers (Name, Phone number) are encrypted locally using **AES-256-GCM** before being saved to Cloud Firestore.
+- Sensitive citizen identifiers (Name, Phone number, Date of Birth `encryptedDob`) are encrypted locally using **AES-256-GCM** before being saved to Cloud Firestore.
 - **Key Derivation (as implemented in `SecurityUtils.kt#L22-L48`)**:
   - The encryption key is derived per authenticated user by taking a **SHA-256** hash over the salt string `"scheme-saathi-vault-v1:$userId"`.
   - Encryption uses `Cipher.getInstance("AES/GCM/NoPadding")` with a **unique 12-byte initialization vector (IV)** generated per encryption call using `SecureRandom`.
   - Includes a **128-bit authentication tag**.
   - Ciphertext is stored as `"GCM1:"` followed by Base64-encoded `IV + CipherText + Tag`.
+- **Date of Birth & Age Privacy**:
+  - Date of birth (`DD/MM/YYYY`) is validated against real calendar rules (`DateUtils`) and kept strictly encrypted.
+  - Plaintext DOB is never sent to the LLM; only the calculated age (accounting for whether the birthday has occurred yet this year) is provided in AI summaries.
+  - Profiles with only `birthYear` (legacy or voice flows) fall back gracefully without breaking eligibility.
 
 ### 3. PII Redaction Before LLM Calls (`SecurityUtils.kt#L83-L96`)
 - Personal identifiers are automatically sanitized before any prompt is dispatched to Gemini:

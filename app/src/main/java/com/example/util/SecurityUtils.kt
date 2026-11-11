@@ -77,10 +77,15 @@ object SecurityUtils {
     }
 
     /**
-     * Redacts personal identifiers (names, phone numbers, Aadhaar-like numbers, bank accounts)
+     * Redacts personal identifiers (names, phone numbers, date of birth, Aadhaar-like numbers, bank accounts)
      * before sending any prompt or profile summary to Gemini AI.
      */
-    fun redactPiiForLlm(input: String, citizenName: String = "", citizenPhone: String = ""): String {
+    fun redactPiiForLlm(
+        input: String,
+        citizenName: String = "",
+        citizenPhone: String = "",
+        citizenDob: String = ""
+    ): String {
         var sanitized = input
         if (citizenName.isNotBlank() && citizenName.length >= 2) {
             sanitized = sanitized.replace(citizenName, "[REDACTED_NAME]", ignoreCase = true)
@@ -88,6 +93,11 @@ object SecurityUtils {
         if (citizenPhone.isNotBlank() && citizenPhone.length >= 4) {
             sanitized = sanitized.replace(citizenPhone, "[REDACTED_PHONE]")
         }
+        if (citizenDob.isNotBlank() && citizenDob.length >= 8) {
+            sanitized = sanitized.replace(citizenDob, "[REDACTED_DOB]")
+        }
+        // Redact standard DD/MM/YYYY or DD-MM-YYYY dates
+        sanitized = sanitized.replace(Regex("\\b\\d{2}[/-]\\d{2}[/-]\\d{4}\\b"), "[REDACTED_DATE]")
         // Redact 10-digit Indian mobile numbers
         sanitized = sanitized.replace(Regex("\\b[6-9]\\d{9}\\b"), "[REDACTED_PHONE]")
         // Redact 12-digit Aadhaar-like sequences

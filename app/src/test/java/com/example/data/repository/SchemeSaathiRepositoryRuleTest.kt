@@ -27,6 +27,7 @@ class SchemeSaathiRepositoryRuleTest : FirestoreEmulatorTestBase() {
             userId = uid,
             encryptedName = SecurityUtils.encryptPii("Sita Devi", uid),
             encryptedPhone = SecurityUtils.encryptPii("9876543210", uid),
+            encryptedDob = SecurityUtils.encryptPii("15/08/1962", uid),
             birthYear = 1962,
             ageConfirmedViaVoice = true,
             gender = "female",
@@ -57,6 +58,7 @@ class SchemeSaathiRepositoryRuleTest : FirestoreEmulatorTestBase() {
         assertNotNull(fetched)
         assertEquals("Uttar Pradesh", fetched?.state)
         assertEquals("Sita Devi", SecurityUtils.decryptPii(fetched?.encryptedName.orEmpty(), uid))
+        assertEquals("15/08/1962", SecurityUtils.decryptPii(fetched?.encryptedDob.orEmpty(), uid))
     }
 
     @Test

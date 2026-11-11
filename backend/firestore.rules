@@ -31,6 +31,7 @@ service cloud.firestore {
       return data.userId is string && data.userId == request.auth.uid && data.userId.size() <= 128 &&
              data.encryptedName is string && data.encryptedName.size() <= 500 &&
              data.encryptedPhone is string && data.encryptedPhone.size() <= 500 &&
+             (!('encryptedDob' in data) || (data.encryptedDob is string && data.encryptedDob.size() <= 500)) &&
              data.birthYear is int && data.birthYear >= 1900 && data.birthYear <= 2026 &&
              data.ageConfirmedViaVoice is bool &&
              data.gender is string && data.gender in ['male', 'female', 'other', 'unknown'] &&
@@ -111,7 +112,7 @@ service cloud.firestore {
                          'createdAt', 'updatedAt'
                        ]) &&
                        incoming().keys().hasOnly([
-                         'userId', 'encryptedName', 'encryptedPhone', 'birthYear',
+                         'userId', 'encryptedName', 'encryptedPhone', 'encryptedDob', 'birthYear',
                          'ageConfirmedViaVoice', 'gender', 'state', 'district',
                          'residenceType', 'annualIncome', 'occupation', 'bplStatus',
                          'socialCategory', 'hasBankAccount', 'hasLpgConnection',
@@ -128,7 +129,7 @@ service cloud.firestore {
                        incoming().userId == existing().userId &&
                        incoming().createdAt == existing().createdAt &&
                        incoming().diff(existing()).affectedKeys().hasOnly([
-                         'encryptedName', 'encryptedPhone', 'birthYear',
+                         'encryptedName', 'encryptedPhone', 'encryptedDob', 'birthYear',
                          'ageConfirmedViaVoice', 'gender', 'state', 'district',
                          'residenceType', 'annualIncome', 'occupation', 'bplStatus',
                          'socialCategory', 'hasBankAccount', 'hasLpgConnection',

@@ -30,5 +30,10 @@
      - Prompt injection and auto-submit refusal (`SecurityUtils.detectPromptInjectionOrAutoSubmit`).
      - Zero form submission tools exposed to the LLM (Mandatory Human Confirmation Gate with SHA-256 snapshot hash).
 4. **Encrypted Data & Repository Layer (`com.example.data.repository.SchemeSaathiRepository`)**:
-   - Field-level AES-256-GCM encryption (`SecurityUtils.encryptPii`) for citizen Name and Phone prior to Cloud Firestore persistence.
+   - Field-level AES-256-GCM encryption (`SecurityUtils.encryptPii`) for citizen Name, Phone, and Date of Birth (`encryptedDob`) prior to Cloud Firestore persistence.
+   - Date of Birth parsing, validation, and age calculation via `DateUtils`:
+     - Strict calendar validation rejecting invalid calendar dates (e.g. `31/02/2000`, non-leap `29/02/2001`), future dates, and ages outside 0–120 years.
+     - Accurate birthday calculation accounting for whether the citizen's birthday has occurred yet in the reference year.
+     - Backward compatibility: profiles with only `birthYear` and voice-only flows evaluate age gracefully, displaying the DOB field empty until completed.
+     - Privacy guarantee: Date of Birth is never shared with Gemini AI; only the calculated age is supplied to tool summaries.
    - User-scoped subcollections (`/users/{userId}/profile/{docId}`, `/users/{userId}/applications/{applicationId}`, `/users/{userId}/tasks/{taskId}`) protected by zero-trust `firestore.rules`.

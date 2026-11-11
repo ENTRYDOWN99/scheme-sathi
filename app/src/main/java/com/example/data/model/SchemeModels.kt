@@ -1,9 +1,12 @@
 package com.example.data.model
 
+import com.example.util.DateUtils
+import com.example.util.SecurityUtils
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentId
 import com.google.firebase.firestore.IgnoreExtraProperties
 import com.google.firebase.firestore.ServerTimestamp
+import java.util.Calendar
 
 @IgnoreExtraProperties
 data class CitizenProfile(
@@ -11,6 +14,7 @@ data class CitizenProfile(
     val userId: String = "",
     val encryptedName: String = "",
     val encryptedPhone: String = "",
+    val encryptedDob: String = "",
     val birthYear: Int = 1985,
     val ageConfirmedViaVoice: Boolean = true,
     val gender: String = "unknown", // male, female, other, unknown
@@ -31,7 +35,24 @@ data class CitizenProfile(
     val role: String = "CITIZEN", // CITIZEN, CSC_OPERATOR, SUPERVISOR, REVIEWER
     @ServerTimestamp val createdAt: Timestamp? = null,
     @ServerTimestamp val updatedAt: Timestamp? = null
-)
+) {
+    /**
+     * Resolves citizen age with accurate birthday calculation from encryptedDob when present.
+     * Falls back cleanly to birthYear for backward compatibility or when only age is known (voice flow).
+     */
+    fun resolveAge(
+        currentDay: Int = Calendar.getInstance().get(Calendar.DAY_OF_MONTH),
+        currentMonth: Int = Calendar.getInstance().get(Calendar.MONTH) + 1,
+        currentYear: Int = Calendar.getInstance().get(Calendar.YEAR)
+    ): Int {
+        if (encryptedDob.isNotBlank() && userId.isNotBlank()) {
+            val decrypted = SecurityUtils.decryptPii(encryptedDob, userId)
+            val calculated = DateUtils.calculateAge(decrypted, currentDay, currentMonth, currentYear)
+            if (calculated in 0..120) return calculated
+        }
+        return if (birthYear in 1901..currentYear) (currentYear - birthYear) else -1
+    }
+}
 
 @IgnoreExtraProperties
 data class SchemeApplication(

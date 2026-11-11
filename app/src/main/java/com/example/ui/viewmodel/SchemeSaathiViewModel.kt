@@ -15,6 +15,7 @@ import com.example.data.model.EligibilityEvaluationResult
 import com.example.data.model.SchemeApplication
 import com.example.data.repository.SchemeSaathiRepository
 import com.example.domain.EligibilityEngine
+import com.example.util.DateUtils
 import com.example.util.SecurityUtils
 import com.google.firebase.firestore.FirebaseFirestoreException
 import kotlinx.coroutines.CancellationException
@@ -87,6 +88,7 @@ class SchemeSaathiViewModel(
     private val _editableProfile = MutableStateFlow(
         CitizenProfile(
             userId = currentUserId,
+            encryptedDob = SecurityUtils.encryptPii("01/01/1964", currentUserId),
             birthYear = 1964,
             ageConfirmedViaVoice = true,
             gender = "female",
@@ -115,6 +117,9 @@ class SchemeSaathiViewModel(
     private val _decryptedPhone = MutableStateFlow("9876543210")
     val decryptedPhone: StateFlow<String> = _decryptedPhone.asStateFlow()
 
+    private val _decryptedDob = MutableStateFlow("01/01/1964")
+    val decryptedDob: StateFlow<String> = _decryptedDob.asStateFlow()
+
     // Two-tier Kotlin Flow error handling for Firestore streams
     val profileUiState: StateFlow<DataUiState<CitizenProfile?>> = repository.observeProfile(currentUserId)
         .map<CitizenProfile?, DataUiState<CitizenProfile?>> { remoteProfile ->
@@ -123,8 +128,16 @@ class SchemeSaathiViewModel(
                 _language.value = remoteProfile.preferredLanguage.ifBlank { "hi" }
                 val decName = SecurityUtils.decryptPii(remoteProfile.encryptedName, currentUserId)
                 val decPhone = SecurityUtils.decryptPii(remoteProfile.encryptedPhone, currentUserId)
+                val decDob = SecurityUtils.decryptPii(remoteProfile.encryptedDob, currentUserId)
                 if (decName.isNotBlank()) _decryptedName.value = decName
                 if (decPhone.isNotBlank()) _decryptedPhone.value = decPhone
+                if (DateUtils.validateDob(decDob) is DateUtils.DobValidationResult.Valid) {
+                    _decryptedDob.value = decDob
+                } else {
+                    // Backward compatibility: If DOB is missing/blank, show DOB field empty
+                    // so the user is prompted to complete it, while age falls back to birthYear.
+                    _decryptedDob.value = ""
+                }
             }
             DataUiState.Success(remoteProfile)
         }
@@ -361,7 +374,8 @@ class SchemeSaathiViewModel(
                 if (granted) {
                     val encName = SecurityUtils.encryptPii(_decryptedName.value, currentUserId)
                     val encPhone = SecurityUtils.encryptPii(_decryptedPhone.value, currentUserId)
-                    repository.saveProfile(updated.copy(encryptedName = encName, encryptedPhone = encPhone))
+                    val encDob = if (_decryptedDob.value.isNotBlank()) SecurityUtils.encryptPii(_decryptedDob.value, currentUserId) else updated.encryptedDob
+                    repository.saveProfile(updated.copy(encryptedName = encName, encryptedPhone = encPhone, encryptedDob = encDob))
                     _statusBanner.value = if (_language.value == "hi") {
                         "सहमति सुरक्षित रूप से दर्ज की गई (AES-256-GCM एन्क्रिप्टेड)।"
                     } else {
@@ -379,6 +393,22 @@ class SchemeSaathiViewModel(
                 throw e
             } catch (e: Exception) {
                 _statusBanner.value = e.localizedMessage ?: "Failed to update consent"
+            }
+        }
+    }
+
+    fun updateDob(dob: String) {
+        _decryptedDob.value = dob
+        val validation = DateUtils.validateDob(dob)
+        if (validation is DateUtils.DobValidationResult.Valid) {
+            val parsed = DateUtils.parseDob(dob)
+            if (parsed != null) {
+                val encDob = SecurityUtils.encryptPii(dob, currentUserId)
+                _editableProfile.value = _editableProfile.value.copy(
+                    encryptedDob = encDob,
+                    birthYear = parsed.year,
+                    ageConfirmedViaVoice = true
+                )
             }
         }
     }
@@ -420,11 +450,13 @@ class SchemeSaathiViewModel(
             try {
                 val encName = SecurityUtils.encryptPii(_decryptedName.value, currentUserId)
                 val encPhone = SecurityUtils.encryptPii(_decryptedPhone.value, currentUserId)
+                val encDob = if (_decryptedDob.value.isNotBlank()) SecurityUtils.encryptPii(_decryptedDob.value, currentUserId) else profile.encryptedDob
                 repository.saveProfile(
                     profile.copy(
                         userId = currentUserId,
                         encryptedName = encName,
-                        encryptedPhone = encPhone
+                        encryptedPhone = encPhone,
+                        encryptedDob = encDob
                     )
                 )
                 _statusBanner.value = if (_language.value == "hi") {
@@ -452,9 +484,11 @@ class SchemeSaathiViewModel(
             _pendingVoiceAge.value = parsedNumber
             val echoText = SecurityUtils.formatAgeEchoConfirmation(parsedNumber, lang)
             _voiceEchoPrompt.value = echoText
-            // Mark age as unconfirmed until explicit Haan / Yes button is pressed
+            // Mark age as unconfirmed until explicit Haan / Yes button is pressed.
+            // Voice sets age directly; clear encryptedDob so fallback birthYear is used.
             _editableProfile.value = _editableProfile.value.copy(
                 birthYear = 2026 - parsedNumber,
+                encryptedDob = "",
                 ageConfirmedViaVoice = false
             )
             onSpeakBack(echoText)
@@ -487,8 +521,10 @@ class SchemeSaathiViewModel(
         if (confirmedHaan) {
             _editableProfile.value = _editableProfile.value.copy(
                 birthYear = 2026 - pendingAge,
+                encryptedDob = "",
                 ageConfirmedViaVoice = true
             )
+            _decryptedDob.value = ""
             _pendingVoiceAge.value = null
             _voiceEchoPrompt.value = null
             _statusBanner.value = if (_language.value == "hi") {

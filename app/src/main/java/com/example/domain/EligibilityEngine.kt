@@ -630,7 +630,7 @@ object EligibilityEngine {
 
         // 3. Extract field value
         val rawValue: Any? = when (condition.field) {
-            "age" -> if (profile.birthYear <= 1900 || profile.birthYear > currentYear) null else (currentYear - profile.birthYear)
+            "age" -> profile.resolveAge(currentYear = currentYear).takeIf { it in 0..120 }
             "gender" -> profile.gender.takeIf { it != "unknown" && it.isNotBlank() }
             "state" -> profile.state.takeIf { it.isNotBlank() }
             "district" -> profile.district.takeIf { it.isNotBlank() }

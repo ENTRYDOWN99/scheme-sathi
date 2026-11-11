@@ -181,9 +181,9 @@ class SchemeSaathiAiService {
         val executedTools = mutableListOf<String>()
         val contextBuilder = StringBuilder()
 
-        // Tool 1: get_profile_summary (redacted PII)
+        // Tool 1: get_profile_summary (redacted PII - calculates age only, never sends DOB)
         executedTools.add("get_profile_summary")
-        val age = if (profile.birthYear in 1901..2026) (2026 - profile.birthYear) else -1
+        val age = profile.resolveAge()
         contextBuilder.appendLine(
             "REDACTED_PROFILE_SUMMARY: age=${if (age > 0) age else "UNKNOWN"}, " +
                 "ageVoiceConfirmed=${profile.ageConfirmedViaVoice}, gender=${profile.gender}, " +

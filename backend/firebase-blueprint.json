@@ -17,6 +17,10 @@
           "type": "string",
           "description": "AES-256-GCM encrypted phone number"
         },
+        "encryptedDob": {
+          "type": "string",
+          "description": "AES-256-GCM encrypted date of birth (DD/MM/YYYY)"
+        },
         "birthYear": {
           "type": "integer",
           "description": "Birth year of the citizen"

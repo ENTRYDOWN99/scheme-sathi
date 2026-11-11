@@ -70,6 +70,7 @@ test("Authenticated user: can create and read own valid CitizenProfile", async (
         userId: ALICE_UID,
         encryptedName: "ENC:Ramesh Kumar",
         encryptedPhone: "ENC:9876543210",
+        encryptedDob: "ENC:01/01/1962",
         birthYear: 1962,
         ageConfirmedViaVoice: true,
         gender: "male",

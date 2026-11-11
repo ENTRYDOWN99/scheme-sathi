@@ -1,0 +1,358 @@
+{
+  "entities": {
+    "CitizenProfile": {
+      "title": "CitizenProfile",
+      "description": "Encrypted citizen profile, consent record, and deterministic eligibility attributes for Scheme Saathi.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated Firebase user UID"
+        },
+        "encryptedName": {
+          "type": "string",
+          "description": "AES-256-GCM encrypted citizen name"
+        },
+        "encryptedPhone": {
+          "type": "string",
+          "description": "AES-256-GCM encrypted phone number"
+        },
+        "birthYear": {
+          "type": "integer",
+          "description": "Birth year of the citizen"
+        },
+        "ageConfirmedViaVoice": {
+          "type": "boolean",
+          "description": "Whether voice-captured age has been explicitly confirmed via Haan/Nahi"
+        },
+        "gender": {
+          "type": "string",
+          "enum": ["male", "female", "other", "unknown"],
+          "description": "Citizen gender"
+        },
+        "state": {
+          "type": "string",
+          "description": "Indian State or UT name"
+        },
+        "district": {
+          "type": "string",
+          "description": "District name"
+        },
+        "residenceType": {
+          "type": "string",
+          "enum": ["rural", "urban", "unknown"],
+          "description": "Rural or urban residence"
+        },
+        "annualIncome": {
+          "type": "integer",
+          "description": "Annual household income in INR (-1 if unknown)"
+        },
+        "occupation": {
+          "type": "string",
+          "description": "Primary occupation (e.g. farmer, laborer, senior, homemaker, student, unorganized_worker)"
+        },
+        "bplStatus": {
+          "type": "string",
+          "enum": ["yes", "no", "unknown"],
+          "description": "Below Poverty Line card status"
+        },
+        "socialCategory": {
+          "type": "string",
+          "enum": ["general", "obc", "sc", "st", "unknown"],
+          "description": "Social category"
+        },
+        "hasBankAccount": {
+          "type": "string",
+          "enum": ["yes", "no", "unknown"],
+          "description": "Bank account availability"
+        },
+        "hasLpgConnection": {
+          "type": "string",
+          "enum": ["yes", "no", "unknown"],
+          "description": "Existing LPG connection in household"
+        },
+        "ownsAgriculturalLand": {
+          "type": "string",
+          "enum": ["yes", "no", "unknown"],
+          "description": "Cultivable agricultural land ownership"
+        },
+        "isIncomeTaxPayer": {
+          "type": "string",
+          "enum": ["yes", "no", "unknown"],
+          "description": "Whether citizen or spouse pays income tax"
+        },
+        "familySize": {
+          "type": "integer",
+          "description": "Number of family members"
+        },
+        "consentGranted": {
+          "type": "boolean",
+          "description": "Explicit privacy consent for storing encrypted profile attributes"
+        },
+        "preferredLanguage": {
+          "type": "string",
+          "enum": ["hi", "en"],
+          "description": "Preferred UI language"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["CITIZEN", "CSC_OPERATOR", "SUPERVISOR", "REVIEWER"],
+          "description": "Role-based access control role in the collaborative workflow"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp via FieldValue.serverTimestamp()"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp via FieldValue.serverTimestamp()"
+        }
+      },
+      "required": [
+        "userId",
+        "encryptedName",
+        "encryptedPhone",
+        "birthYear",
+        "ageConfirmedViaVoice",
+        "gender",
+        "state",
+        "district",
+        "residenceType",
+        "annualIncome",
+        "occupation",
+        "bplStatus",
+        "socialCategory",
+        "hasBankAccount",
+        "hasLpgConnection",
+        "ownsAgriculturalLand",
+        "isIncomeTaxPayer",
+        "familySize",
+        "consentGranted",
+        "preferredLanguage",
+        "role",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "SchemeApplication": {
+      "title": "SchemeApplication",
+      "description": "Citizen scheme application draft, provenance metadata, human confirmation gate hash, and tracking status.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated Firebase user UID"
+        },
+        "schemeId": {
+          "type": "string",
+          "description": "Scheme code (PM-KISAN, NSAP-IGNOAPS, PMUY, PM-JAY, APY)"
+        },
+        "schemeName": {
+          "type": "string",
+          "description": "Localized or English name of the scheme"
+        },
+        "ruleVersion": {
+          "type": "string",
+          "description": "Version of the eligibility rules used"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "DRAFT",
+            "PREFILLED",
+            "IN_REVIEW",
+            "CONFIRMED",
+            "HANDED_OFF",
+            "SUBMITTED_SELF_REPORTED",
+            "ACKNOWLEDGED",
+            "APPROVED",
+            "REJECTED",
+            "CLOSED",
+            "ABANDONED"
+          ],
+          "description": "Current lifecycle status of the application"
+        },
+        "verified": {
+          "type": "boolean",
+          "description": "True only when status is department-verified, false for self-reported"
+        },
+        "applicantName": {
+          "type": "string",
+          "description": "Applicant full name on form"
+        },
+        "applicantNameSource": {
+          "type": "string",
+          "enum": ["profile", "user_typed", "voice_confirmed"],
+          "description": "Provenance source for applicantName"
+        },
+        "stateDistrict": {
+          "type": "string",
+          "description": "State and District on form"
+        },
+        "stateDistrictSource": {
+          "type": "string",
+          "enum": ["profile", "user_typed", "voice_confirmed"],
+          "description": "Provenance source for stateDistrict"
+        },
+        "bankIfscSummary": {
+          "type": "string",
+          "description": "Bank linkage status or branch code summary"
+        },
+        "bankIfscSource": {
+          "type": "string",
+          "enum": ["profile", "user_typed", "voice_confirmed"],
+          "description": "Provenance source for bankIfscSummary"
+        },
+        "checklistSummary": {
+          "type": "string",
+          "description": "Summary of document checklist statuses (Have/Missing/Unknown)"
+        },
+        "snapshotHash": {
+          "type": "string",
+          "description": "SHA-256 review snapshot hash validated at human confirmation gate"
+        },
+        "explicitCitizenConfirmed": {
+          "type": "boolean",
+          "description": "Whether citizen explicitly confirmed the review snapshot"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp via FieldValue.serverTimestamp()"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp via FieldValue.serverTimestamp()"
+        }
+      },
+      "required": [
+        "userId",
+        "schemeId",
+        "schemeName",
+        "ruleVersion",
+        "status",
+        "verified",
+        "applicantName",
+        "applicantNameSource",
+        "stateDistrict",
+        "stateDistrictSource",
+        "bankIfscSummary",
+        "bankIfscSource",
+        "checklistSummary",
+        "snapshotHash",
+        "explicitCitizenConfirmed",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CollaborativeTask": {
+      "title": "CollaborativeTask",
+      "description": "Collaborative welfare verification, document assistance, or reminder task with RBAC assignment and activity logs.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner user UID"
+        },
+        "title": {
+          "type": "string",
+          "description": "Task title"
+        },
+        "description": {
+          "type": "string",
+          "description": "Task description and instructions"
+        },
+        "assigneeName": {
+          "type": "string",
+          "description": "Assigned team member or CSC operator name"
+        },
+        "assigneeRole": {
+          "type": "string",
+          "enum": ["CITIZEN", "CSC_OPERATOR", "SUPERVISOR", "REVIEWER"],
+          "description": "Assigned role"
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["LOW", "MEDIUM", "HIGH", "URGENT"],
+          "description": "Task priority level"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"],
+          "description": "Task status"
+        },
+        "schemeCode": {
+          "type": "string",
+          "description": "Associated scheme code"
+        },
+        "dueDateLabel": {
+          "type": "string",
+          "description": "Due date or reminder schedule label"
+        },
+        "deliveryChannel": {
+          "type": "string",
+          "enum": ["IN_APP", "SMS_MOCK"],
+          "description": "Reminder delivery channel"
+        },
+        "deliveryStatus": {
+          "type": "string",
+          "enum": ["SCHEDULED", "DELIVERED", "RETRY_1M", "CANCELLED"],
+          "description": "Actual notification delivery status"
+        },
+        "activityLogSummary": {
+          "type": "string",
+          "description": "Latest audit/activity log entry"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp via FieldValue.serverTimestamp()"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp via FieldValue.serverTimestamp()"
+        }
+      },
+      "required": [
+        "userId",
+        "title",
+        "description",
+        "assigneeName",
+        "assigneeRole",
+        "priority",
+        "status",
+        "schemeCode",
+        "dueDateLabel",
+        "deliveryChannel",
+        "deliveryStatus",
+        "activityLogSummary",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/profile/{docId}": {
+      "schema": {
+        "$ref": "#/entities/CitizenProfile"
+      },
+      "description": "Encrypted citizen profile and consent document scoped to userId"
+    },
+    "/users/{userId}/applications/{applicationId}": {
+      "schema": {
+        "$ref": "#/entities/SchemeApplication"
+      },
+      "description": "Citizen welfare scheme applications scoped to userId"
+    },
+    "/users/{userId}/tasks/{taskId}": {
+      "schema": {
+        "$ref": "#/entities/CollaborativeTask"
+      },
+      "description": "Collaborative tasks, reminders, and activity logs scoped to userId"
+    }
+  }
+}

@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Scheme Saathi</string>
+    <string name="app_subtitle_hi">सरकारी कल्याण योजना एवं कार्य सहायक</string>
+    <string name="app_subtitle_en">Citizen Welfare Scheme &amp; Collaborative Task Companion</string>
+    <string name="sign_in_with_google">Sign in with Google / गूगल से साइन इन करें</string>
+    <string name="no_aadhaar_notice">No Aadhaar number is ever collected or stored. Sensitive fields are AES-256-GCM encrypted.</string>
+    <string name="human_gate_notice">Scheme Saathi does not automatically submit government applications. All submissions require explicit citizen review and guided handoff.</string>
+</resources>

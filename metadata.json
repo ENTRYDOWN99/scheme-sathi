@@ -1,0 +1,6 @@
+{
+  "name": "Scheme Saathi",
+  "description": "Bilingual Hindi/English Government Welfare Scheme Assistant with deterministic eligibility evaluation, Gemini AI assistant, voice guidance, document scanner, and application preparation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

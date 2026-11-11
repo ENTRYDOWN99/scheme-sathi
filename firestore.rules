@@ -1,0 +1,219 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 1: Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Validation Helper for CitizenProfile
+    function isValidCitizenProfile(data) {
+      return data.userId is string && data.userId == request.auth.uid && data.userId.size() <= 128 &&
+             data.encryptedName is string && data.encryptedName.size() <= 500 &&
+             data.encryptedPhone is string && data.encryptedPhone.size() <= 500 &&
+             data.birthYear is int && data.birthYear >= 1900 && data.birthYear <= 2026 &&
+             data.ageConfirmedViaVoice is bool &&
+             data.gender is string && data.gender in ['male', 'female', 'other', 'unknown'] &&
+             data.state is string && data.state.size() <= 100 &&
+             data.district is string && data.district.size() <= 100 &&
+             data.residenceType is string && data.residenceType in ['rural', 'urban', 'unknown'] &&
+             data.annualIncome is int && data.annualIncome >= -1 && data.annualIncome <= 100000000 &&
+             data.occupation is string && data.occupation.size() <= 100 &&
+             data.bplStatus is string && data.bplStatus in ['yes', 'no', 'unknown'] &&
+             data.socialCategory is string && data.socialCategory in ['general', 'obc', 'sc', 'st', 'unknown'] &&
+             data.hasBankAccount is string && data.hasBankAccount in ['yes', 'no', 'unknown'] &&
+             data.hasLpgConnection is string && data.hasLpgConnection in ['yes', 'no', 'unknown'] &&
+             data.ownsAgriculturalLand is string && data.ownsAgriculturalLand in ['yes', 'no', 'unknown'] &&
+             data.isIncomeTaxPayer is string && data.isIncomeTaxPayer in ['yes', 'no', 'unknown'] &&
+             data.familySize is int && data.familySize >= 1 && data.familySize <= 50 &&
+             data.consentGranted is bool &&
+             data.preferredLanguage is string && data.preferredLanguage in ['hi', 'en'] &&
+             data.role is string && data.role in ['CITIZEN', 'CSC_OPERATOR', 'SUPERVISOR', 'REVIEWER'] &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    // Validation Helper for SchemeApplication
+    function isValidSchemeApplication(data) {
+      return data.userId is string && data.userId == request.auth.uid && data.userId.size() <= 128 &&
+             data.schemeId is string && data.schemeId.size() >= 1 && data.schemeId.size() <= 64 &&
+             data.schemeName is string && data.schemeName.size() >= 1 && data.schemeName.size() <= 200 &&
+             data.ruleVersion is string && data.ruleVersion.size() >= 1 && data.ruleVersion.size() <= 64 &&
+             data.status is string && data.status in [
+               'DRAFT', 'PREFILLED', 'IN_REVIEW', 'CONFIRMED', 'HANDED_OFF',
+               'SUBMITTED_SELF_REPORTED', 'ACKNOWLEDGED', 'APPROVED', 'REJECTED', 'CLOSED', 'ABANDONED'
+             ] &&
+             data.verified is bool &&
+             data.applicantName is string && data.applicantName.size() <= 200 &&
+             data.applicantNameSource is string && data.applicantNameSource in ['profile', 'user_typed', 'voice_confirmed'] &&
+             data.stateDistrict is string && data.stateDistrict.size() <= 200 &&
+             data.stateDistrictSource is string && data.stateDistrictSource in ['profile', 'user_typed', 'voice_confirmed'] &&
+             data.bankIfscSummary is string && data.bankIfscSummary.size() <= 200 &&
+             data.bankIfscSource is string && data.bankIfscSource in ['profile', 'user_typed', 'voice_confirmed'] &&
+             data.checklistSummary is string && data.checklistSummary.size() <= 1000 &&
+             data.snapshotHash is string && data.snapshotHash.size() <= 128 &&
+             data.explicitCitizenConfirmed is bool &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    // Validation Helper for CollaborativeTask
+    function isValidCollaborativeTask(data) {
+      return data.userId is string && data.userId == request.auth.uid && data.userId.size() <= 128 &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+             data.description is string && data.description.size() <= 1000 &&
+             data.assigneeName is string && data.assigneeName.size() <= 100 &&
+             data.assigneeRole is string && data.assigneeRole in ['CITIZEN', 'CSC_OPERATOR', 'SUPERVISOR', 'REVIEWER'] &&
+             data.priority is string && data.priority in ['LOW', 'MEDIUM', 'HIGH', 'URGENT'] &&
+             data.status is string && data.status in ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'] &&
+             data.schemeCode is string && data.schemeCode.size() <= 64 &&
+             data.dueDateLabel is string && data.dueDateLabel.size() <= 100 &&
+             data.deliveryChannel is string && data.deliveryChannel in ['IN_APP', 'SMS_MOCK'] &&
+             data.deliveryStatus is string && data.deliveryStatus in ['SCHEDULED', 'DELIVERED', 'RETRY_1M', 'CANCELLED'] &&
+             data.activityLogSummary is string && data.activityLogSummary.size() <= 1000 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    match /users/{userId}/profile/{docId} {
+      allow get: if isOwner(userId) && isValidId(userId) && isValidId(docId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidId(docId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'encryptedName', 'encryptedPhone', 'birthYear',
+                         'ageConfirmedViaVoice', 'gender', 'state', 'district',
+                         'residenceType', 'annualIncome', 'occupation', 'bplStatus',
+                         'socialCategory', 'hasBankAccount', 'hasLpgConnection',
+                         'ownsAgriculturalLand', 'isIncomeTaxPayer', 'familySize',
+                         'consentGranted', 'preferredLanguage', 'role',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'encryptedName', 'encryptedPhone', 'birthYear',
+                         'ageConfirmedViaVoice', 'gender', 'state', 'district',
+                         'residenceType', 'annualIncome', 'occupation', 'bplStatus',
+                         'socialCategory', 'hasBankAccount', 'hasLpgConnection',
+                         'ownsAgriculturalLand', 'isIncomeTaxPayer', 'familySize',
+                         'consentGranted', 'preferredLanguage', 'role',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidCitizenProfile(incoming());
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidId(docId) &&
+                       isValidCitizenProfile(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'encryptedName', 'encryptedPhone', 'birthYear',
+                         'ageConfirmedViaVoice', 'gender', 'state', 'district',
+                         'residenceType', 'annualIncome', 'occupation', 'bplStatus',
+                         'socialCategory', 'hasBankAccount', 'hasLpgConnection',
+                         'ownsAgriculturalLand', 'isIncomeTaxPayer', 'familySize',
+                         'consentGranted', 'preferredLanguage', 'role', 'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(userId) && isValidId(docId);
+    }
+
+    match /users/{userId}/applications/{applicationId} {
+      allow get: if isOwner(userId) && isValidId(userId) && isValidId(applicationId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidId(applicationId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'schemeId', 'schemeName', 'ruleVersion',
+                         'status', 'verified', 'applicantName', 'applicantNameSource',
+                         'stateDistrict', 'stateDistrictSource', 'bankIfscSummary',
+                         'bankIfscSource', 'checklistSummary', 'snapshotHash',
+                         'explicitCitizenConfirmed', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'schemeId', 'schemeName', 'ruleVersion',
+                         'status', 'verified', 'applicantName', 'applicantNameSource',
+                         'stateDistrict', 'stateDistrictSource', 'bankIfscSummary',
+                         'bankIfscSource', 'checklistSummary', 'snapshotHash',
+                         'explicitCitizenConfirmed', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidSchemeApplication(incoming());
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidId(applicationId) &&
+                       isValidSchemeApplication(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().schemeId == existing().schemeId &&
+                       incoming().createdAt == existing().createdAt &&
+                       !(existing().status in ['CLOSED', 'ABANDONED']) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'schemeName', 'ruleVersion', 'status', 'verified',
+                         'applicantName', 'applicantNameSource', 'stateDistrict',
+                         'stateDistrictSource', 'bankIfscSummary', 'bankIfscSource',
+                         'checklistSummary', 'snapshotHash', 'explicitCitizenConfirmed',
+                         'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(userId) && isValidId(applicationId);
+    }
+
+    match /users/{userId}/tasks/{taskId} {
+      allow get: if isOwner(userId) && isValidId(userId) && isValidId(taskId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidId(taskId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'title', 'description', 'assigneeName',
+                         'assigneeRole', 'priority', 'status', 'schemeCode',
+                         'dueDateLabel', 'deliveryChannel', 'deliveryStatus',
+                         'activityLogSummary', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'title', 'description', 'assigneeName',
+                         'assigneeRole', 'priority', 'status', 'schemeCode',
+                         'dueDateLabel', 'deliveryChannel', 'deliveryStatus',
+                         'activityLogSummary', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidCollaborativeTask(incoming());
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidId(taskId) &&
+                       isValidCollaborativeTask(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'title', 'description', 'assigneeName', 'assigneeRole',
+                         'priority', 'status', 'schemeCode', 'dueDateLabel',
+                         'deliveryChannel', 'deliveryStatus', 'activityLogSummary',
+                         'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(userId) && isValidId(taskId);
+    }
+  }
+}

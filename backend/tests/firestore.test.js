@@ -5,6 +5,7 @@ const {
 } = require("@firebase/rules-unit-testing");
 const { test, before, after, beforeEach } = require("node:test");
 const fs = require("node:fs");
+const path = require("node:path");
 
 let testEnv;
 const PROJECT_ID = process.env.GCP_PROJECT || "demo-no-project";
@@ -17,7 +18,10 @@ const [emulatorHost, emulatorPortStr] = (
 const emulatorPort = parseInt(emulatorPortStr, 10);
 
 before(async () => {
-  const rules = fs.readFileSync("./firestore.rules", "utf8");
+  const rulesPath = fs.existsSync("./firestore.rules")
+    ? "./firestore.rules"
+    : path.join(__dirname, "../firestore.rules");
+  const rules = fs.readFileSync(rulesPath, "utf8");
   testEnv = await initializeTestEnvironment({
     projectId: PROJECT_ID,
     firestore: {

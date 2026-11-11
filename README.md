@@ -7,6 +7,34 @@
 [![Compose](https://img.shields.io/badge/UI-Jetpack_Compose_Material_3-4285F4?style=flat&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
 [![Firebase](https://img.shields.io/badge/Backend-Firebase_Auth_|_Firestore_|_App_Check-FFCA28?style=flat&logo=firebase&logoColor=black)](https://firebase.google.com)
 [![Gemini](https://img.shields.io/badge/AI-Firebase_AI_SDK_(Gemini)-8E75C2?style=flat&logo=google&logoColor=white)](https://firebase.google.com/docs/ai)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+---
+
+## ⚡ Judge Quick Start
+
+> ### 🏆 For Hackathon Judges & Evaluators:
+>
+> #### 🚀 Path A: Fastest Evaluation (Recommended)
+> Download the pre-built, signed APK directly from GitHub Releases:
+> - **Download Link**: `TODO: https://github.com/YOUR_USERNAME/saathi/releases/latest/download/SchemeSaathi.apk`
+> - **Why this path?** This APK is pre-signed with the registered SHA-1 certificate, allowing **real Google Sign-In** and **live Firebase backend sync** to work immediately on any Android phone (Android 7.0+ / API 24+).
+> *(Note: The `.apk` file is intentionally excluded from the Git repository history to maintain a clean codebase).*
+>
+> #### 🛠️ Path B: Build from Source
+> ```powershell
+> # 1. Clone repository
+> git clone https://github.com/YOUR_USERNAME/saathi.git
+> cd saathi
+>
+> # 2. Copy the template Firebase configuration
+> copy app\google-services.json.example app\google-services.json
+>
+> # 3. Build the debug APK
+> .\gradlew.bat assembleDebug
+> ```
+> ⚠️ **Important Note on Building with the Example Config**:
+> When building from source with `app/google-services.json.example`, the project compiles cleanly and offline features (deterministic eligibility engine, offline fallback chat, UI navigation) function as expected. However, **live Google Sign-In and Cloud Firestore will NOT authenticate with the example file** because Google Play Services and **Firebase App Check** strictly enforce that the Android app's signing certificate SHA-1 and OAuth client ID match a live registered Firebase project in the cloud. To enable live auth in your own build, see [Connecting Your Own Firebase Project](#connecting-your-own-firebase-project).
 
 ---
 
@@ -112,51 +140,21 @@ If the AI call times out (60s) or fails, the engine automatically falls back to 
 
 ---
 
-## 🚀 Getting Started & Building from Source
+## 🚀 Building from Source
 
 ### Prerequisites
 - **JDK**: Java 17 or Java 21
 - **Android Studio**: Ladybug / Meerkat or command-line Android SDK (API 36 / Build Tools 36.0.0)
 - **Android Device / Emulator**: Android 7.0+ (API level 24 or higher)
 
-### 1. Clone the Repository
-```bash
-git clone https://github.com/TODO_YOUR_USERNAME/saathi.git
-cd saathi
-```
-
-### 2. Configure Firebase (`google-services.json`)
-The real `google-services.json` is excluded from Git to prevent credential leaks. 
-
-For **local development and building**:
-```powershell
-# Copy the provided template to app/google-services.json
-copy app\google-services.json.example app\google-services.json
-```
-
-For **full Google Sign-In and live Firebase features**:
-1. Go to the [Firebase Console](https://console.firebase.google.com/) and create a project.
-2. Register an Android App with package name:
-   ```
-   com.aistudio.schemesaathi.kxmzpq
-   ```
-3. Add your debug SHA-1 signing fingerprint:
-   ```bash
-   # View your local debug keystore SHA-1:
-   keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
-   ```
-4. Enable **Google** under **Authentication → Sign-in method**.
-5. Download your real `google-services.json` and place it at:
-   ```
-   app/google-services.json
-   ```
-
-### 3. Build the Debug APK
+### 1. Build the Debug APK
 ```powershell
 # Windows
+copy app\google-services.json.example app\google-services.json
 .\gradlew.bat assembleDebug
 
 # Linux / macOS
+cp app/google-services.json.example app/google-services.json
 chmod +x gradlew
 ./gradlew assembleDebug
 ```
@@ -167,24 +165,38 @@ app/build/outputs/apk/debug/app-debug.apk
 
 > **Note on Keystores for Fresh Clones**: `app/build.gradle.kts` automatically detects whether a local custom keystore exists. If absent, it gracefully defaults to standard Android debug signing so the project builds out of the box on any fresh clone without manual keystore configuration.
 
+### 2. Connecting Your Own Firebase Project
+To test live Google Sign-In and Cloud Firestore with your own Firebase project:
+1. Go to the [Firebase Console](https://console.firebase.google.com/) and create a project.
+2. Register an Android App with package name:
+   ```
+   com.aistudio.schemesaathi.kxmzpq
+   ```
+3. Add your debug SHA-1 signing certificate fingerprint.
+4. Enable **Google** under **Authentication → Sign-in method**.
+5. Download your real `google-services.json` and place it in the `app/` folder.
+
 ---
 
-## 🧪 Testing Firestore Security Rules (Optional)
+## 🧪 Testing Firestore Security Rules
 
-The repository includes a comprehensive unit test suite (`firestore.test.js`) verifying zero-trust access control rules:
+The repository includes a backend unit test suite (`backend/tests/firestore.test.js`) verifying zero-trust Firestore security rules using the `@firebase/rules-unit-testing` harness:
 - Unauthenticated users cannot read or write profiles, applications, or tasks.
-- Users can only access their own subcollections (`users/{userId}/*`).
-- Aadhaar fields are strictly rejected by security rules.
+- Users can only access their own user-scoped subcollections (`users/{userId}/*`).
+- 12-digit Aadhaar fields are strictly rejected at the database rule boundary.
 
-To run the rules unit tests:
+### Prerequisites for Rules Testing:
+- **Node.js**: v18+ (tested on Node v20/v24)
+- **Java Runtime**: Java 11 or higher (required by the Firebase Firestore emulator)
+
+### Running the Test Suite:
 ```bash
-# 1. Install dependencies
+cd backend
 npm ci
-
-# 2. Start Firebase Emulator and run tests
 npm test
 ```
-*(Requires Firebase CLI and Java runtime for emulator suite).*
+> **Environment Testing Status**:
+> The `npm test` script runs `firebase emulators:exec --only firestore "node --test tests/firestore.test.js"` using the local `firebase-tools` devDependency. In this local development machine, full emulator execution was **not run** during build verification due to absence of the local Firestore emulator runtime.
 
 ---
 
@@ -214,11 +226,17 @@ saathi/
 │       │       ├── AppCheckInitializer.kt     # Debug & production Firebase App Check setup
 │       │       └── SecurityUtils.kt           # AES-256-GCM, Aadhaar guard, SHA-256 snapshot
 │       └── res/                               # Hindi/English strings, drawables, XML layouts
+├── backend/                                   # Firebase configuration & security rules
+│   ├── firestore.rules                        # Zero-trust Cloud Firestore security rules
+│   ├── firebase.json                          # Emulator & database configuration
+│   ├── firebase-blueprint.json                # Schema and data model blueprint
+│   ├── package.json                           # Rules testing scripts & local firebase-tools
+│   ├── package-lock.json                      # Locked dependencies for npm ci
+│   └── tests/
+│       └── firestore.test.js                  # Rules unit test suite (@firebase/rules-unit-testing)
 ├── docs/                                      # Architecture, assumptions, and design notes
-├── firebase.json                              # Firestore emulator ports & rules configuration
-├── firestore.rules                            # Zero-trust Firestore security rules
-├── firestore.test.js                          # Security rules unit tests
-├── package.json                               # Rules testing npm scripts
+├── .env.example                               # Environment configuration template
+├── LICENSE                                    # MIT License
 ├── build.gradle.kts                           # Root Gradle project configuration
 ├── settings.gradle.kts                        # Plugin and repository management
 └── gradlew / gradlew.bat                      # Gradle wrapper executables
@@ -228,5 +246,5 @@ saathi/
 
 ## ⚖️ License & Acknowledgments
 
-- Built for the Hackathon by TODO: Your Team Name / Author Name.
+- Licensed under the [MIT License](LICENSE).
 - Government scheme data and benefit definitions are based on publicly available welfare portals under the Government of India.

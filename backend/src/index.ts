@@ -10,9 +10,9 @@ async function bootstrap() {
   await seedDatabase(db);
 
   const app = createApp(db);
-  const server = app.listen(config.port, () => {
+  const server = app.listen(config.port, '0.0.0.0', () => {
     console.info(
-      `[server] SchemeSaathi API listening on http://localhost:${config.port} (docs: /api/docs, dialect: ${db.dialect})`
+      `[server] SchemeSaathi API listening on http://0.0.0.0:${config.port} (docs: /api/docs, dialect: ${db.dialect})`
     );
   });
 

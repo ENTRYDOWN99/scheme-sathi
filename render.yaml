@@ -18,8 +18,6 @@ services:
         value: "24"
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: "4000"
       - key: LOG_LEVEL
         value: info
       - key: DATABASE_URL

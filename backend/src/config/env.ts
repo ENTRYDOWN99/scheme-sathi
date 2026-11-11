@@ -38,19 +38,56 @@ export function loadConfig(): AppConfig {
     process.env.PII_ENCRYPTION_KEY || (nodeEnv === 'production' ? '' : DEFAULT_DEV_PII_KEY);
 
   if (nodeEnv === 'production') {
-    if (jwtSecret.length < 32 || jwtRefreshSecret.length < 32) {
-      throw new Error('JWT_SECRET and JWT_REFRESH_SECRET must be >= 32 characters in production');
+    if (!jwtSecret || jwtSecret.length < 32) {
+      throw new Error(
+        `Invalid JWT_SECRET: must be set and at least 32 characters in production (got ${jwtSecret.length} characters)`
+      );
+    }
+    if (!jwtRefreshSecret || jwtRefreshSecret.length < 32) {
+      throw new Error(
+        `Invalid JWT_REFRESH_SECRET: must be set and at least 32 characters in production (got ${jwtRefreshSecret.length} characters)`
+      );
+    }
+    if (!piiEncryptionKey) {
+      throw new Error(
+        'Invalid PII_ENCRYPTION_KEY: must be set to an exact 64-character hexadecimal string in production'
+      );
     }
     if (!/^[0-9a-fA-F]{64}$/.test(piiEncryptionKey)) {
-      throw new Error('PII_ENCRYPTION_KEY must be a 64-character hex string in production');
+      throw new Error(
+        `Invalid PII_ENCRYPTION_KEY: must be an exact 64-character hexadecimal string in production (got length ${piiEncryptionKey.length})`
+      );
     }
   }
 
-  const corsOriginRaw = process.env.CORS_ORIGIN || 'http://localhost:3000';
+  const corsOriginEnv = process.env.CORS_ORIGIN;
+  if (nodeEnv === 'production' && (!corsOriginEnv || !corsOriginEnv.trim())) {
+    throw new Error(
+      'Invalid CORS_ORIGIN: must be set to one or more comma-separated http(s) URLs in production'
+    );
+  }
+
+  const corsOriginRaw = corsOriginEnv || 'http://localhost:3000';
   const corsOrigins = corsOriginRaw
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
+
+  if (nodeEnv === 'production') {
+    for (const origin of corsOrigins) {
+      let parsed: URL;
+      try {
+        parsed = new URL(origin);
+      } catch {
+        throw new Error(
+          `Invalid CORS_ORIGIN: "${origin}" is not a valid URL (expected http:// or https:// origin)`
+        );
+      }
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        throw new Error(`Invalid CORS_ORIGIN: "${origin}" must use http: or https: protocol`);
+      }
+    }
+  }
 
   return {
     port: Number(process.env.PORT || 4000),

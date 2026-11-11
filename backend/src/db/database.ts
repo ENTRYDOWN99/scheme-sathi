@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { DatabaseSync } from 'node:sqlite';
+import type { DatabaseSync } from 'node:sqlite';
 import { Pool } from 'pg';
 import { config } from '../config/env.js';
 
@@ -24,43 +24,55 @@ function normalizeParam(val: SqlParam): string | number | null {
 
 class SqliteAdapter implements DatabaseClient {
   readonly dialect = 'sqlite' as const;
-  private db: DatabaseSync;
+  private dbPromise: Promise<DatabaseSync>;
 
   constructor(filePath: string) {
+    this.dbPromise = this.openDatabase(filePath);
+  }
+
+  private async openDatabase(filePath: string): Promise<DatabaseSync> {
+    const { DatabaseSync } = await import('node:sqlite');
+    let db: DatabaseSync;
     if (filePath !== ':memory:') {
       const resolved = path.resolve(filePath);
       fs.mkdirSync(path.dirname(resolved), { recursive: true });
-      this.db = new DatabaseSync(resolved);
+      db = new DatabaseSync(resolved);
     } else {
-      this.db = new DatabaseSync(':memory:');
+      db = new DatabaseSync(':memory:');
     }
-    this.db.exec('PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL;');
+    db.exec('PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL;');
+    return db;
   }
 
   async query<T = Record<string, unknown>>(sql: string, params: SqlParam[] = []): Promise<T[]> {
-    const stmt = this.db.prepare(sql);
+    const db = await this.dbPromise;
+    const stmt = db.prepare(sql);
     const rows = stmt.all(...params.map(normalizeParam)) as T[];
     return rows;
   }
 
   async get<T = Record<string, unknown>>(sql: string, params: SqlParam[] = []): Promise<T | null> {
-    const stmt = this.db.prepare(sql);
+    const db = await this.dbPromise;
+    const stmt = db.prepare(sql);
     const row = stmt.get(...params.map(normalizeParam)) as T | undefined;
     return row ?? null;
   }
 
   async run(sql: string, params: SqlParam[] = []): Promise<{ changes: number }> {
-    const stmt = this.db.prepare(sql);
+    const db = await this.dbPromise;
+    const stmt = db.prepare(sql);
     const result = stmt.run(...params.map(normalizeParam));
     return { changes: Number(result.changes ?? 0) };
   }
 
   async exec(sql: string): Promise<void> {
-    this.db.exec(sql);
+    const db = await this.dbPromise;
+    db.exec(sql);
   }
 
   async close(): Promise<void> {
-    this.db.close();
+    const db = await this.dbPromise;
+    db.close();
   }
 }
 
@@ -74,7 +86,12 @@ class PostgresAdapter implements DatabaseClient {
   private pool: Pool;
 
   constructor(connectionString: string) {
-    this.pool = new Pool({ connectionString });
+    const isProduction = process.env.NODE_ENV === 'production' || config.nodeEnv === 'production';
+    const useSsl = isProduction && !connectionString.includes('sslmode=disable');
+    this.pool = new Pool({
+      connectionString,
+      ...(useSsl ? { ssl: { rejectUnauthorized: false } } : {})
+    });
   }
 
   async query<T = Record<string, unknown>>(sql: string, params: SqlParam[] = []): Promise<T[]> {

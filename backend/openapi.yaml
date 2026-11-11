@@ -1,0 +1,243 @@
+openapi: 3.0.3
+info:
+  title: SchemeSaathi Shared API
+  version: 1.0.0
+  description: |
+    Unified REST API powering both the SchemeSaathi Next.js Web PWA and native Android app.
+    Enforces server-side RBAC (CITIZEN, CSC_OPERATOR, SUPERVISOR, REVIEWER), deterministic scheme eligibility evaluation,
+    AES-256-GCM PII encryption, strict no-Aadhaar rejection, Human Confirmation Gate with SHA-256 snapshot verification,
+    and grounded bilingual Gemini AI guidance with deterministic fallback.
+servers:
+  - url: http://localhost:4000
+    description: Local Development Server
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: saathi_access_token
+  schemas:
+    Role:
+      type: string
+      enum: [CITIZEN, CSC_OPERATOR, SUPERVISOR, REVIEWER]
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required: [error, message]
+paths:
+  /health:
+    get:
+      summary: Service health and database readiness check
+      responses:
+        '200':
+          description: Healthy
+  /api/v1/auth/register:
+    post:
+      summary: Register a new CITIZEN user account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [displayName, password]
+              properties:
+                email: { type: string }
+                phone: { type: string }
+                displayName: { type: string }
+                password: { type: string }
+                preferredLanguage: { type: string, enum: [en, hi] }
+      responses:
+        '201': { description: Account created with access & refresh tokens }
+        '409': { description: Duplicate email or phone }
+  /api/v1/auth/login:
+    post:
+      summary: Sign in with email/phone and password
+      responses:
+        '200': { description: Authenticated session tokens and httpOnly cookies }
+        '401': { description: Invalid credentials }
+  /api/v1/auth/demo-login:
+    post:
+      summary: Sign into a seeded role demo account (CITIZEN, CSC_OPERATOR, SUPERVISOR, REVIEWER)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  $ref: '#/components/schemas/Role'
+      responses:
+        '200': { description: Demo session started }
+  /api/v1/auth/otp/request:
+    post:
+      summary: Request a one-time verification code
+      responses:
+        '200': { description: OTP issued }
+  /api/v1/auth/otp/verify:
+    post:
+      summary: Verify OTP and issue session tokens
+      responses:
+        '200': { description: Verified and authenticated }
+  /api/v1/auth/refresh:
+    post:
+      summary: Rotate refresh token and issue a new access token
+      responses:
+        '200': { description: Token rotated }
+  /api/v1/auth/logout:
+    post:
+      summary: Revoke refresh token and clear session cookies
+      responses:
+        '200': { description: Logged out }
+  /api/v1/auth/me:
+    get:
+      summary: Get authenticated user claims
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }]
+      responses:
+        '200': { description: Current user }
+  /api/v1/schemes:
+    get:
+      summary: List all 5 seeded government schemes with rule trees & document lists
+      responses:
+        '200': { description: List of schemes }
+  /api/v1/schemes/{id}:
+    get:
+      summary: Retrieve single government scheme details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Scheme detail }
+  /api/v1/schemes/evaluate:
+    post:
+      summary: Deterministically evaluate citizen profile against all or one scheme
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }]
+      responses:
+        '200': { description: Deterministic evaluation outcomes (ELIGIBLE / NOT_ELIGIBLE / UNKNOWN) }
+  /api/v1/profile:
+    get:
+      summary: Retrieve decrypted citizen profile for authenticated citizen or CSC/Supervisor target
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }]
+      responses:
+        '200': { description: Citizen profile }
+    put:
+      summary: Update citizen profile with DD/MM/YYYY validation & AES-256-GCM PII encryption
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }]
+      responses:
+        '200': { description: Updated profile }
+        '400': { description: Invalid DOB or Aadhaar forbidden }
+    delete:
+      summary: DPDP personal data erasure for profile & checklist records
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }]
+      responses:
+        '200': { description: Personal data erased }
+  /api/v1/profile/export:
+    get:
+      summary: DPDP structured JSON export of citizen data
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }]
+      responses:
+        '200': { description: Citizen export bundle }
+  /api/v1/checklists:
+    get:
+      summary: List persistent document readiness statuses (HAVE / MISSING / UNKNOWN)
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }]
+      responses:
+        '200': { description: Checklist items }
+    put:
+      summary: Upsert document readiness status for a scheme document
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }]
+      responses:
+        '200': { description: Saved checklist status }
+  /api/v1/applications:
+    get:
+      summary: List scheme applications (scoped by RBAC role)
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }]
+      responses:
+        '200': { description: Applications list }
+    post:
+      summary: Create guided application draft awaiting Human Confirmation Gate
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }]
+      responses:
+        '201': { description: Application draft created with SHA-256 snapshot hash }
+  /api/v1/applications/{id}/confirm:
+    post:
+      summary: Human Confirmation Gate (requires matching SHA-256 snapshot hash & 3 explicit flags)
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Human confirmation recorded }
+        '409': { description: Snapshot hash mismatch }
+  /api/v1/applications/{id}/review:
+    patch:
+      summary: Reviewer / Supervisor verification decision (APPROVED / REJECTED / UNDER_REVIEW)
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Application reviewed }
+        '403': { description: Forbidden for CITIZEN or CSC_OPERATOR }
+  /api/v1/tasks:
+    get:
+      summary: List alerts and CSC collaborative tasks
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }]
+      responses:
+        '200': { description: Task list }
+    post:
+      summary: Create alert or follow-up task
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }]
+      responses:
+        '201': { description: Task created }
+  /api/v1/tasks/{id}:
+    patch:
+      summary: Update task completion or unread alert badge
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Task updated }
+  /api/v1/ai/chat:
+    post:
+      summary: Grounded AI assistant chat with safety guards, PII redaction & deterministic fallback
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }]
+      responses:
+        '200': { description: AI response or offline deterministic fallback }
+  /api/v1/ai/voice-age:
+    post:
+      summary: Parse spoken Hindi/English age utterance into echo confirmation prompt
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }]
+      responses:
+        '200': { description: Detected age and echo confirmation prompt }
+  /api/v1/audit:
+    get:
+      summary: Read PII-safe security audit trail (SUPERVISOR / REVIEWER only)
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }]
+      responses:
+        '200': { description: Audit logs }
+  /api/v1/audit/metrics:
+    get:
+      summary: Aggregate operational metrics for staff & supervisors
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }]
+      responses:
+        '200': { description: Aggregate counts }

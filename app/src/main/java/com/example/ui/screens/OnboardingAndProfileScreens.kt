@@ -215,7 +215,7 @@ fun WelcomeScreen(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = if (language == "hi") "1. स्वागत है – स्कीम साथी" else "1. Welcome to Scheme Saathi",
+            text = if (language == "hi") "स्वागत है – स्कीम साथी" else "Welcome to Scheme Saathi",
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.primary
         )
@@ -276,7 +276,7 @@ fun LanguageSelectionScreen(
             .padding(16.dp)
     ) {
         Text(
-            text = if (language == "hi") "2. भाषा और पठनीयता (Language & Accessibility)" else "2. Language & Accessibility Settings",
+            text = if (language == "hi") "भाषा और पठनीयता सेटिंग्स" else "Language & Accessibility Settings",
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.primary
         )
@@ -415,7 +415,7 @@ fun ConsentScreen(
             .padding(16.dp)
     ) {
         Text(
-            text = if (language == "hi") "4. गोपनीयता सहमति और डेटा सुरक्षा" else "4. Privacy Consent & AES-256-GCM Protection",
+            text = if (language == "hi") "गोपनीयता सहमति और डेटा सुरक्षा" else "Privacy Consent & Data Protection",
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.primary
         )
@@ -550,13 +550,13 @@ fun ProfileSetupScreen(
             .padding(16.dp)
     ) {
         Text(
-            text = if (language == "hi") "5. नागरिक प्रोफ़ाइल सेटअप (16 विशेषताएं)" else "5. Citizen Profile Setup (16 Attributes)",
+            text = if (language == "hi") "नागरिक प्रोफ़ाइल सेटअप" else "Citizen Profile Setup",
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.primary
         )
         Text(
             text = if (language == "hi") {
-                "अज्ञात (Unknown) फ़ील्ड अपने आप अपात्र (NOT_ELIGIBLE) नहीं करते, बल्कि UNKNOWN दिखाते हैं।"
+                "अपूर्ण जानकारी होने पर स्थिति 'अज्ञात' (UNKNOWN) रहती है, अपात्र नहीं। नाम व फ़ोन AES-256-GCM एन्क्रिप्टेड हैं।"
             } else {
                 "Missing fields evaluate to UNKNOWN, never automatically NOT_ELIGIBLE. Name & Phone are AES-256-GCM encrypted."
             },

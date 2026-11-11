@@ -1,0 +1,38 @@
+<resources>
+    <string name="app_name">स्कीम साथी</string>
+    <string name="app_subtitle">सरकारी कल्याण योजना एवं सहयोगात्मक कार्य सहायक</string>
+    <string name="sign_in_with_google">गूगल से साइन इन करें</string>
+    <string name="no_aadhaar_notice">आधार नंबर कभी नहीं लिया जाता और न ही संग्रहीत किया जाता है। संवेदनशील फ़ील्ड AES-256-GCM एन्क्रिप्टेड हैं।</string>
+    <string name="human_gate_notice">स्कीम साथी सरकारी आवेदनों को स्वतः जमा नहीं करता है। सभी आवेदनों के लिए नागरिक द्वारा समीक्षा और पुष्टि आवश्यक है।</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">होम</string>
+    <string name="nav_chat">चैट</string>
+    <string name="nav_apply">आवेदन</string>
+    <string name="nav_alerts">कार्य/अलर्ट</string>
+    <string name="nav_settings">सेटिंग्स</string>
+
+    <!-- Roles -->
+    <string name="role_label">भूमिका</string>
+    <string name="role_citizen">नागरिक</string>
+    <string name="role_csc_operator">सीएससी ऑपरेटर</string>
+    <string name="role_supervisor">पर्यवेक्षक</string>
+    <string name="role_reviewer">समीक्षक</string>
+
+    <!-- Document Statuses -->
+    <string name="doc_have">उपलब्ध है</string>
+    <string name="doc_missing">नहीं है</string>
+    <string name="doc_unknown">पता नहीं</string>
+
+    <!-- Eligibility Outcomes -->
+    <string name="outcome_eligible">पात्र</string>
+    <string name="outcome_unknown">अज्ञात</string>
+    <string name="outcome_not_eligible">अपात्र</string>
+
+    <!-- AI Messages & Errors -->
+    <string name="ai_error_busy">AI सर्वर अभी व्यस्त है, कृपया एक मिनट बाद पुनः प्रयास करें।</string>
+    <string name="ai_error_network">कृपया अपना इंटरनेट कनेक्शन जांचें और पुनः प्रयास करें।</string>
+    <string name="ai_error_generic">AI सेवा अस्थायी रूप से अनुपलब्ध है। कृपया थोड़ी देर बाद प्रयास करें।</string>
+    <string name="doc_analysis_fallback">फोटो का विश्लेषण नहीं किया जा सका, कृपया चेकलिस्ट को मैन्युअल रूप से चिह्नित करें।</string>
+    <string name="ai_safety_human_gate">सुरक्षा नीति (Human Confirmation Gate): स्कीम साथी एआई को सरकारी आवेदन सीधे जमा या पुष्टि करने की अनुमति नहीं है। सरकारी नियमों के अनुसार, नागरिक या अधिकृत ऑपरेटर को \'समीक्षा व पुष्टि\' स्क्रीन पर व्यक्तिगत रूप से जांच कर पुष्टि करनी होती है।</string>
+</resources>

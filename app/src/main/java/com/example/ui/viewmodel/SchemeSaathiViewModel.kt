@@ -232,7 +232,7 @@ class SchemeSaathiViewModel(
                 role = "assistant",
                 content = "नमस्ते! मैं स्कीम साथी हूँ। मैं नियम इंजन (Deterministic Rule Engine) के माध्यम से PM-KISAN, वृद्धावस्था पेंशन (NSAP-IGNOAPS), उज्ज्वला योजना (PMUY), आयुष्मान भारत (PM-JAY) और अटल पेंशन योजना (APY) की पात्रता और आवश्यक दस्तावेजों की जांच में आपकी मदद कर सकता हूँ।\n\nHello! I am Scheme Saathi. Ask me in Hindi or English about your eligibility, documents, or application preparation!",
                 modelUsed = "gemini-3.8-flash",
-                toolCallsSummary = listOf("system_ready")
+                toolCallsSummary = emptyList()
             )
         )
     )
@@ -625,14 +625,20 @@ class SchemeSaathiViewModel(
             _documentAnalysisText.value = null
             val scheme = EligibilityEngine.getSchemeById(_selectedSchemeId.value)
                 ?: EligibilityEngine.initialFiveSchemes.first()
-            val result = aiService.analyzeDocumentImageWithArgon(
+            val result = aiService.analyzeDocumentImage(
                 bitmap = bitmap,
                 schemeCode = scheme.code,
                 language = _language.value
             )
             _isAnalyzingDocument.value = false
             _documentAnalysisText.value = result.getOrElse { err ->
-                "Document analysis error (${err.localizedMessage ?: "check connection"}). Please verify document fields manually."
+                val friendly = aiService.mapAiErrorToFriendlyMessage(err, _language.value)
+                val manual = if (_language.value == "hi") {
+                    "फोटो का विश्लेषण नहीं किया जा सका, कृपया चेकलिस्ट को मैन्युअल रूप से चिह्नित करें।"
+                } else {
+                    "Could not analyze photo automatically, please tick the checklist manually."
+                }
+                "⚠️ $friendly\n\n$manual"
             }
         }
     }

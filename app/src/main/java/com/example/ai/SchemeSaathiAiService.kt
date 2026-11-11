@@ -27,38 +27,38 @@ enum class GeminiModelMode(
 ) {
     STANDARD_FLASH(
         modelId = "gemini-3.8-flash",
-        labelEn = "Standard (gemini-3.8-flash)",
-        labelHi = "सामान्य (gemini-3.8-flash)",
+        labelEn = "Standard",
+        labelHi = "सामान्य",
         descriptionEn = "Balanced multi-turn bilingual assistant"
     ),
     FAST_LITE(
         modelId = "gemini-3.1-flash-lite",
-        labelEn = "Low-Latency (gemini-3.1-flash-lite)",
-        labelHi = "तेज़ उत्तर (gemini-3.1-flash-lite)",
+        labelEn = "Fast Answers",
+        labelHi = "तेज़ उत्तर",
         descriptionEn = "Ultra-fast low-latency responses"
     ),
     HIGH_THINKING_CARBON(
-        modelId = "gemini-3.8-flash",
-        labelEn = "High Thinking (gemini-3.8-flash)",
-        labelHi = "गहन विश्लेषण (gemini-3.8-flash)",
-        descriptionEn = "Deep reasoning with ThinkingLevel.HIGH (Free Tier)"
+        modelId = "gemini-4-carbon",
+        labelEn = "Deep Thinking",
+        labelHi = "गहन विश्लेषण",
+        descriptionEn = "Deep reasoning with ThinkingLevel.HIGH (Fallback: gemini-3.8-flash)"
     ),
     COMPLEX_ARGON(
-        modelId = "gemini-3.8-flash",
-        labelEn = "Complex & Vision (gemini-3.8-flash)",
-        labelHi = "दस्तावेज़ व जटिल (gemini-3.8-flash)",
-        descriptionEn = "Complex interactive & multimodal document understanding (Free Tier)"
+        modelId = "gemini-4-argon",
+        labelEn = "Document & Vision",
+        labelHi = "दस्तावेज़ विश्लेषण",
+        descriptionEn = "Multimodal document understanding (Fallback: gemini-3.8-flash)"
     ),
     LIVE_VOICE(
         modelId = "gemini-3.8-flash",
-        labelEn = "Live Voice (gemini-3.8-flash)",
-        labelHi = "लाइव वॉइस (gemini-3.8-flash)",
+        labelEn = "Live Voice",
+        labelHi = "लाइव वॉइस",
         descriptionEn = "Real-time conversational voice mode (Free Tier)"
     ),
     TTS_AUDIO(
         modelId = "gemini-3.8-flash-tts",
-        labelEn = "TTS Speech (gemini-3.8-flash-tts)",
-        labelHi = "टेक्स्ट-टू-स्पीच (gemini-3.8-flash-tts)",
+        labelEn = "Text-to-Speech",
+        labelHi = "टेक्स्ट-टू-स्पीच",
         descriptionEn = "Speech script & phonetic synthesis"
     )
 }
@@ -78,22 +78,21 @@ class SchemeSaathiAiService {
     """.trimIndent()
 
     // Lazy initialization per Firebase AI Logic skill
-    private val flashModel by lazy {
+    val flashModel by lazy {
         Firebase.ai.generativeModel(
             modelName = "gemini-3.8-flash",
             systemInstruction = content { text(systemPromptText) }
         )
     }
 
-    private val fastLiteModel by lazy {
+    val fastLiteModel by lazy {
         Firebase.ai.generativeModel(
             modelName = "gemini-3.1-flash-lite",
             systemInstruction = content { text(systemPromptText) }
         )
     }
 
-    // High Thinking model using gemini-3.8-flash with ThinkingLevel.HIGH (Free Tier)
-    private val highThinkingCarbonModel by lazy {
+    val highThinkingCarbonModel by lazy {
         Firebase.ai.generativeModel(
             modelName = "gemini-3.8-flash",
             generationConfig = generationConfig {
@@ -105,16 +104,26 @@ class SchemeSaathiAiService {
         )
     }
 
-    // Document vision model using gemini-3.8-flash (Free Tier, supports multimodal)
-    private val argonModel by lazy {
+    val carbonModel by lazy {
         Firebase.ai.generativeModel(
-            modelName = "gemini-3.8-flash",
+            modelName = "gemini-4-carbon",
+            generationConfig = generationConfig {
+                thinkingConfig = thinkingConfig {
+                    thinkingLevel = ThinkingLevel.HIGH
+                }
+            },
             systemInstruction = content { text(systemPromptText) }
         )
     }
 
-    // Live voice model using gemini-3.8-flash (Free Tier)
-    private val liveVoiceModel by lazy {
+    val argonModel by lazy {
+        Firebase.ai.generativeModel(
+            modelName = "gemini-4-argon",
+            systemInstruction = content { text(systemPromptText) }
+        )
+    }
+
+    val liveVoiceModel by lazy {
         Firebase.ai.generativeModel(
             modelName = "gemini-3.8-flash",
             systemInstruction = content {
@@ -123,10 +132,55 @@ class SchemeSaathiAiService {
         )
     }
 
-    private val ttsModel by lazy {
+    val ttsModel by lazy {
         Firebase.ai.generativeModel(
             modelName = "gemini-3.8-flash-tts"
         )
+    }
+
+    /**
+     * Central error mapper: translates exceptions into friendly bilingual user messages.
+     * Raw exceptions and URLs are logged with Log.e only and never leaked to the UI.
+     */
+    fun mapAiErrorToFriendlyMessage(throwable: Throwable?, language: String): String {
+        val rawMessage = throwable?.message.orEmpty()
+        val rawLocalized = throwable?.localizedMessage.orEmpty()
+        val combined = "$rawMessage $rawLocalized".lowercase()
+
+        val isQuota = combined.contains("quota") ||
+            combined.contains("429") ||
+            combined.contains("resource_exhausted") ||
+            combined.contains("limit: 0") ||
+            combined.contains("limit '0'") ||
+            combined.contains("too many requests") ||
+            combined.contains("rate limit")
+
+        val isNetwork = throwable is java.net.UnknownHostException ||
+            throwable is java.net.SocketTimeoutException ||
+            throwable is TimeoutCancellationException ||
+            combined.contains("unable to resolve host") ||
+            combined.contains("connection refused") ||
+            combined.contains("network error") ||
+            combined.contains("timeout") ||
+            combined.contains("connect timed out")
+
+        return when {
+            isQuota -> if (language == "hi") {
+                "AI सर्वर अभी व्यस्त है, कृपया एक मिनट बाद पुनः प्रयास करें।"
+            } else {
+                "AI is busy right now, please try again in a minute."
+            }
+            isNetwork -> if (language == "hi") {
+                "कृपया अपना इंटरनेट कनेक्शन जांचें और पुनः प्रयास करें।"
+            } else {
+                "Please check your internet connection and try again."
+            }
+            else -> if (language == "hi") {
+                "AI सेवा अस्थायी रूप से अनुपलब्ध है। कृपया थोड़ी देर बाद प्रयास करें।"
+            } else {
+                "AI service is temporarily unavailable. Please try again shortly."
+            }
+        }
     }
 
     /**
@@ -194,8 +248,10 @@ class SchemeSaathiAiService {
     }
 
     /**
-     * Streams a grounded multi-turn chat response using the selected Gemini model.
-     * Enforces Prompt Injection blocking, Aadhaar blocking, PII Redaction, and 60s timeout.
+     * Streams a grounded multi-turn chat response using the selected Gemini model with a model fallback chain.
+     * If the selected model encounters quota, rate limit, or error, it automatically falls back
+     * to the next model in the chain (gemini-3.8-flash -> gemini-3.1-flash-lite).
+     * If all models fail, it falls back to the deterministic offline summary.
      */
     fun streamGroundedChat(
         userPrompt: String,
@@ -223,12 +279,21 @@ class SchemeSaathiAiService {
             return@flow
         }
 
-        // 2. Check Prompt Injection or Auto-Submit guard
+        // 2. Check Prompt Injection or Auto-Submit guard (Human Confirmation Gate)
         val (blocked, blockReason) = SecurityUtils.detectPromptInjectionOrAutoSubmit(userPrompt)
         if (blocked && blockReason != null) {
+            val politeMessage = if (blockReason.startsWith("HUMAN_GATE_BLOCK")) {
+                if (language == "hi") {
+                    "🛡️ सुरक्षा नीति (Human Confirmation Gate): स्कीम साथी एआई को सरकारी आवेदन सीधे जमा या पुष्टि करने की अनुमति नहीं है। सरकारी सुरक्षा और पारदर्शिता नियमों के अनुसार, नागरिक या अधिकृत ऑपरेटर को 'समीक्षा व पुष्टि' (Review & Confirm) स्क्रीन पर व्यक्तिगत रूप से जांच कर डिजिटल पुष्टि करनी होती है।"
+                } else {
+                    "🛡️ Safety Guardrail (Human Confirmation Gate): Scheme Saathi AI is strictly prohibited from auto-submitting government applications. Per security and governance policies, citizen welfare submissions require mandatory human review on the 'Review & Confirm' screen with a verifiable SHA-256 snapshot hash."
+                }
+            } else {
+                blockReason
+            }
             emit(
                 AiStreamUpdate.Completed(
-                    text = blockReason,
+                    text = politeMessage,
                     toolsUsed = listOf("ai_safety_guard", "human_confirmation_gate"),
                     modelUsed = modelMode.modelId
                 )
@@ -246,15 +311,6 @@ class SchemeSaathiAiService {
         // 4. Execute deterministic tools
         val (toolsUsed, groundedContext) = executeDeterministicTools(redactedPrompt, profile, evaluations)
         emit(AiStreamUpdate.ToolExecution(toolsUsed))
-
-        val selectedModel = when (modelMode) {
-            GeminiModelMode.STANDARD_FLASH -> flashModel
-            GeminiModelMode.FAST_LITE -> fastLiteModel
-            GeminiModelMode.HIGH_THINKING_CARBON -> highThinkingCarbonModel
-            GeminiModelMode.COMPLEX_ARGON -> argonModel
-            GeminiModelMode.LIVE_VOICE -> liveVoiceModel
-            GeminiModelMode.TTS_AUDIO -> ttsModel
-        }
 
         val historyText = conversationHistory.takeLast(6).joinToString("\n") { (role, msg) ->
             "$role: ${SecurityUtils.redactPiiForLlm(msg, decryptedNameForRedaction, decryptedPhoneForRedaction)}"
@@ -274,118 +330,192 @@ class SchemeSaathiAiService {
             Respond helpfully in ${if (language == "hi") "Hindi (Devanagari script)" else "English"}, citing the deterministic eligibility outcomes (ELIGIBLE, NOT_ELIGIBLE, or UNKNOWN) and official scheme URLs from GROUNDED_TOOL_RESULTS. Remind the user that thresholds are illustrative and final submission requires their explicit review.
         """.trimIndent()
 
-        val accumulated = StringBuilder()
-        try {
-            withTimeout(60_000L) {
-                selectedModel.generateContentStream(fullGroundedPrompt).collect { chunk ->
-                    val chunkText = chunk.text.orEmpty()
-                    if (chunkText.isNotEmpty()) {
-                        accumulated.append(chunkText)
-                        emit(AiStreamUpdate.StreamingChunk(accumulated.toString(), toolsUsed, modelMode.modelId))
+        // Fallback chain for chat:
+        val modelChain = when (modelMode) {
+            GeminiModelMode.HIGH_THINKING_CARBON -> listOf(
+                carbonModel to "gemini-4-carbon",
+                highThinkingCarbonModel to "gemini-3.8-flash",
+                fastLiteModel to "gemini-3.1-flash-lite"
+            )
+            GeminiModelMode.COMPLEX_ARGON -> listOf(
+                argonModel to "gemini-4-argon",
+                flashModel to "gemini-3.8-flash",
+                fastLiteModel to "gemini-3.1-flash-lite"
+            )
+            GeminiModelMode.FAST_LITE -> listOf(
+                fastLiteModel to "gemini-3.1-flash-lite",
+                flashModel to "gemini-3.8-flash"
+            )
+            GeminiModelMode.STANDARD_FLASH -> listOf(
+                flashModel to "gemini-3.8-flash",
+                fastLiteModel to "gemini-3.1-flash-lite"
+            )
+            GeminiModelMode.LIVE_VOICE -> listOf(
+                liveVoiceModel to "gemini-3.8-flash",
+                fastLiteModel to "gemini-3.1-flash-lite"
+            )
+            GeminiModelMode.TTS_AUDIO -> listOf(
+                ttsModel to "gemini-3.8-flash-tts",
+                flashModel to "gemini-3.8-flash"
+            )
+        }
+
+        var succeeded = false
+        var lastException: Throwable? = null
+
+        for ((model, modelId) in modelChain) {
+            val accumulated = StringBuilder()
+            try {
+                withTimeout(45_000L) {
+                    model.generateContentStream(fullGroundedPrompt).collect { chunk ->
+                        val chunkText = chunk.text.orEmpty()
+                        if (chunkText.isNotEmpty()) {
+                            accumulated.append(chunkText)
+                            emit(AiStreamUpdate.StreamingChunk(accumulated.toString(), toolsUsed, modelId))
+                        }
                     }
                 }
+                val finalOutput = accumulated.toString().trim()
+                if (finalOutput.isNotBlank()) {
+                    emit(AiStreamUpdate.Completed(finalOutput, toolsUsed, modelId))
+                    succeeded = true
+                    break
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                lastException = e
+                Log.w(TAG, "Model $modelId failed (will attempt fallback): ${e.message}")
             }
-            val finalOutput = accumulated.toString().trim()
-            if (finalOutput.isNotBlank()) {
-                emit(AiStreamUpdate.Completed(finalOutput, toolsUsed, modelMode.modelId))
-            } else {
-                // Grounded wizard fallback if model returns empty text
-                val fallback = buildDeterministicWizardFallback(language, evaluations)
-                emit(AiStreamUpdate.Completed(fallback, toolsUsed, "${modelMode.modelId} (Grounded Fallback)"))
-            }
-        } catch (e: TimeoutCancellationException) {
-            Log.e(TAG, "AI generation timed out", e)
-            emit(AiStreamUpdate.Error("Request timed out after 60 seconds. Deterministic summary:\n" + buildDeterministicWizardFallback(language, evaluations)))
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Log.e(TAG, "Firebase AI call failed", e)
+        }
+
+        if (!succeeded) {
+            Log.e(TAG, "All models in fallback chain failed. Emitting offline deterministic fallback.", lastException)
+            val friendlyMsg = mapAiErrorToFriendlyMessage(lastException, language)
+            val offlineFallback = buildDeterministicWizardFallback(language, evaluations)
             emit(
-                AiStreamUpdate.Error(
-                    (e.localizedMessage ?: "AI request failed") +
-                        "\n\n" + buildDeterministicWizardFallback(language, evaluations)
+                AiStreamUpdate.Completed(
+                    text = "⚠️ $friendlyMsg\n\n$offlineFallback",
+                    toolsUsed = toolsUsed + listOf("offline_rule_engine"),
+                    modelUsed = "Deterministic Engine (Offline Fallback)"
                 )
             )
         }
     }
 
     /**
-     * Analyzes an uploaded citizen document/certificate image using model `gemini-3.8-flash`.
+     * Analyzes an uploaded citizen document/certificate image.
+     * Uses multimodal vision fallback chain: gemini-4-argon -> gemini-3.8-flash.
+     * Note: gemini-3.1-flash-lite is text-only and not used for vision.
+     * If all vision models fail, gracefully returns a friendly message instructing the citizen
+     * to verify the document checklist manually, never showing raw exceptions or URLs.
      */
-    suspend fun analyzeDocumentImageWithArgon(
+    suspend fun analyzeDocumentImage(
         bitmap: Bitmap,
         schemeCode: String,
         language: String
     ): Result<String> {
-        return try {
-            val prompt = if (language == "hi") {
-                """
-                इस दस्तावेज़ छवि का विश्लेषण योजना '$schemeCode' के लिए करें (gemini-3.8-flash)।
-                1. यह कौन सा दस्तावेज़ प्रतीत होता है? (जैसे खतौनी, राशन कार्ड, बैंक पासबुक, आयु प्रमाण पत्र)।
-                2. क्या इसमें नाम, जारी करने की तिथि या आधिकारिक मुहर स्पष्ट दिखाई दे रही है?
-                3. सुरक्षा नियम: यदि इसमें कोई 12 अंकों का आधार नंबर दिखे तो उसे कभी न लिखें ([REDACTED] लिखें)।
-                हिंदी में स्पष्ट बुलेट पॉइंट्स में उत्तर दें।
-                """.trimIndent()
-            } else {
-                """
-                Analyze this citizen welfare document image for scheme '$schemeCode' using gemini-3.8-flash:
-                1. Identify the document type (e.g., Land Khatauni, BPL Ration Card, Bank Passbook, Age Certificate).
-                2. Check legibility, visible fields, and whether any information appears missing for '$schemeCode'.
-                3. PRIVACY RULE: Redact any 12-digit Aadhaar number as [REDACTED_AADHAAR].
-                Provide a clear, structured checklist assessment.
-                """.trimIndent()
-            }
-
-            val response = withTimeout(60_000L) {
-                argonModel.generateContent(
-                    content {
-                        image(bitmap)
-                        text(prompt)
-                    }
-                )
-            }
-            val text = response.text?.trim()
-            if (!text.isNullOrBlank()) {
-                Result.success(SecurityUtils.redactPiiForLlm(text))
-            } else {
-                Result.failure(IllegalStateException("gemini-3.8-flash returned an empty analysis response."))
-            }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Log.e(TAG, "Document image analysis with gemini-3.8-flash failed", e)
-            Result.failure(e)
+        val prompt = if (language == "hi") {
+            """
+            इस दस्तावेज़ छवि का विश्लेषण योजना '$schemeCode' के लिए करें:
+            1. यह कौन सा दस्तावेज़ प्रतीत होता है? (जैसे खतौनी, राशन कार्ड, बैंक पासबुक, आयु प्रमाण पत्र)।
+            2. क्या इसमें नाम, जारी करने की तिथि या आधिकारिक मुहर स्पष्ट दिखाई दे रही है?
+            3. सुरक्षा नियम: यदि इसमें कोई 12 अंकों का आधार नंबर दिखे तो उसे कभी न लिखें ([REDACTED] लिखें)।
+            हिंदी में स्पष्ट बुलेट पॉइंट्स में उत्तर दें।
+            """.trimIndent()
+        } else {
+            """
+            Analyze this citizen welfare document image for scheme '$schemeCode':
+            1. Identify the document type (e.g., Land Khatauni, BPL Ration Card, Bank Passbook, Age Certificate).
+            2. Check legibility, visible fields, and whether any information appears missing for '$schemeCode'.
+            3. PRIVACY RULE: Redact any 12-digit Aadhaar number as [REDACTED_AADHAAR].
+            Provide a clear, structured checklist assessment.
+            """.trimIndent()
         }
+
+        val visionModels = listOf(
+            argonModel to "gemini-4-argon",
+            flashModel to "gemini-3.8-flash"
+        )
+
+        var lastException: Throwable? = null
+
+        for ((model, modelId) in visionModels) {
+            try {
+                val response = withTimeout(45_000L) {
+                    model.generateContent(
+                        content {
+                            image(bitmap)
+                            text(prompt)
+                        }
+                    )
+                }
+                val text = response.text?.trim()
+                if (!text.isNullOrBlank()) {
+                    return Result.success(SecurityUtils.redactPiiForLlm(text))
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                lastException = e
+                Log.w(TAG, "Vision model $modelId failed (will attempt fallback): ${e.message}")
+            }
+        }
+
+        Log.e(TAG, "All vision models failed for document image analysis", lastException)
+        val friendlyMsg = mapAiErrorToFriendlyMessage(lastException, language)
+        val manualHint = if (language == "hi") {
+            "फोटो का विश्लेषण नहीं किया जा सका, कृपया चेकलिस्ट को मैन्युअल रूप से चिह्नित करें।"
+        } else {
+            "Could not analyze photo automatically, please tick the checklist manually."
+        }
+        return Result.success("⚠️ $friendlyMsg\n\n$manualHint")
     }
+
+    // Keep alias for backwards compatibility
+    suspend fun analyzeDocumentImageWithArgon(
+        bitmap: Bitmap,
+        schemeCode: String,
+        language: String
+    ): Result<String> = analyzeDocumentImage(bitmap, schemeCode, language)
 
     /**
      * Converts text into natural spoken guidance script using model `gemini-3.8-flash-tts`
-     * before speaking aloud via the device audio engine.
+     * with fallback to `gemini-3.8-flash` before speaking aloud via the device audio engine.
      */
     suspend fun prepareSpeechWithFlashTts(
         textToSpeak: String,
         language: String
     ): String {
-        return try {
-            val prompt = if (language == "hi") {
-                "निम्नलिखित संदेश को सरल, स्पष्ट बोलचाल की हिंदी में संक्षिप्त (2 वाक्यों में) वॉइस आउटपुट के लिए तैयार करें:\n$textToSpeak"
-            } else {
-                "Prepare the following message as a clear, warm 2-sentence spoken audio script for a citizen:\n$textToSpeak"
+        val models = listOf(
+            ttsModel to "gemini-3.8-flash-tts",
+            flashModel to "gemini-3.8-flash"
+        )
+        for ((model, modelId) in models) {
+            try {
+                val prompt = if (language == "hi") {
+                    "निम्नलिखित संदेश को सरल, स्पष्ट बोलचाल की हिंदी में संक्षिप्त (2 वाक्यों में) वॉइस आउटपुट के लिए तैयार करें:\n$textToSpeak"
+                } else {
+                    "Prepare the following message as a clear, warm 2-sentence spoken audio script for a citizen:\n$textToSpeak"
+                }
+                val response = withTimeout(20_000L) {
+                    model.generateContent(prompt)
+                }
+                val resText = response.text?.trim()
+                if (!resText.isNullOrBlank()) {
+                    return resText
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "TTS script prep model $modelId failed, trying fallback: ${e.message}")
             }
-            val response = withTimeout(30_000L) {
-                ttsModel.generateContent(prompt)
-            }
-            response.text?.trim()?.takeIf { it.isNotBlank() } ?: textToSpeak
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Log.w(TAG, "gemini-3.8-flash-tts fallback to direct text: ${e.message}")
-            textToSpeak
         }
+        return textToSpeak
     }
 
     /**
-     * Conducts a real-time Live Voice turn using model `gemini-3.8-flash`.
+     * Conducts a real-time Live Voice turn using model `gemini-3.8-flash` with fallback to `gemini-3.1-flash-lite`.
      */
     suspend fun generateLiveVoiceTurn(
         spokenTranscript: String,
@@ -393,35 +523,43 @@ class SchemeSaathiAiService {
         profile: CitizenProfile,
         evaluations: List<EligibilityEvaluationResult>
     ): Result<String> {
-        return try {
-            val (_, groundedContext) = executeDeterministicTools(spokenTranscript, profile, evaluations)
-            val prompt = """
-                LIVE_VOICE_TURN (gemini-3.8-live)
-                LANGUAGE: ${if (language == "hi") "Hindi (हिंदी)" else "English"}
-                GROUNDED_ELIGIBILITY_FACTS:
-                $groundedContext
-                
-                USER_SPOKEN_UTTERANCE:
-                ${SecurityUtils.redactPiiForLlm(spokenTranscript)}
-                
-                Reply in 2 short, warm spoken sentences suitable for immediate voice playback. Never invent eligibility or submit forms.
-            """.trimIndent()
+        val voiceModels = listOf(
+            liveVoiceModel to "gemini-3.8-flash",
+            fastLiteModel to "gemini-3.1-flash-lite"
+        )
+        val (_, groundedContext) = executeDeterministicTools(spokenTranscript, profile, evaluations)
+        val prompt = """
+            LIVE_VOICE_TURN
+            LANGUAGE: ${if (language == "hi") "Hindi (हिंदी)" else "English"}
+            GROUNDED_ELIGIBILITY_FACTS:
+            $groundedContext
+            
+            USER_SPOKEN_UTTERANCE:
+            ${SecurityUtils.redactPiiForLlm(spokenTranscript)}
+            
+            Reply in 2 short, warm spoken sentences suitable for immediate voice playback. Never invent eligibility or submit forms.
+        """.trimIndent()
 
-            val response = withTimeout(45_000L) {
-                liveVoiceModel.generateContent(prompt)
+        var lastException: Throwable? = null
+        for ((model, modelId) in voiceModels) {
+            try {
+                val response = withTimeout(30_000L) {
+                    model.generateContent(prompt)
+                }
+                val text = response.text?.trim()
+                if (!text.isNullOrBlank()) {
+                    return Result.success(text)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                lastException = e
+                Log.w(TAG, "Live voice model $modelId failed, trying next: ${e.message}")
             }
-            val text = response.text?.trim()
-            if (!text.isNullOrBlank()) {
-                Result.success(text)
-            } else {
-                Result.success(buildDeterministicWizardFallback(language, evaluations))
-            }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Log.e(TAG, "gemini-3.8-live turn failed", e)
-            Result.failure(e)
         }
+        Log.e(TAG, "All voice models failed", lastException)
+        val fallback = buildDeterministicWizardFallback(language, evaluations)
+        return Result.success(fallback)
     }
 
     fun buildDeterministicWizardFallback(
@@ -434,10 +572,10 @@ class SchemeSaathiAiService {
 
         return if (language == "hi") {
             buildString {
-                appendLine("📋 नियम इंजन (Rule Engine) परिणाम सारांश:")
-                appendLine("• पात्र (ELIGIBLE): ${eligible.ifEmpty { listOf("कोई नहीं") }.joinToString(", ")}")
-                appendLine("• अतिरिक्त जानकारी आवश्यक (UNKNOWN): ${unknown.ifEmpty { listOf("कोई नहीं") }.joinToString(", ")}")
-                appendLine("• अपात्र (NOT_ELIGIBLE): ${notEligible.ifEmpty { listOf("कोई नहीं") }.joinToString(", ")}")
+                appendLine("📋 नियम इंजन परिणाम सारांश:")
+                appendLine("• पात्र: ${eligible.ifEmpty { listOf("कोई नहीं") }.joinToString(", ")}")
+                appendLine("• अतिरिक्त जानकारी आवश्यक: ${unknown.ifEmpty { listOf("कोई नहीं") }.joinToString(", ")}")
+                appendLine("• अपात्र: ${notEligible.ifEmpty { listOf("कोई नहीं") }.joinToString(", ")}")
                 append("नोट: सभी नियम उदाहरणार्थ हैं और अंतिम आवेदन केवल आपकी समीक्षा के बाद जन सेवा केंद्र (CSC) या आधिकारिक पोर्टल पर होता है।")
             }
         } else {

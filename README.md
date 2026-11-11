@@ -192,16 +192,31 @@ Security and citizen protection are built into the foundation of Scheme Saathi:
 
 Scheme Saathi is **designed to run on free-tier Gemini via Firebase AI SDK (`Firebase.ai`)**:
 
-### Models Configured (Verbatim code identifiers from `SchemeSaathiAiService.kt`):
+### Gemini Models Configured (Verbatim code identifiers from `SchemeSaathiAiService.kt`):
 - **`gemini-3.8-flash`**:
-  - Standard bilingual conversational multi-turn chat (`generateContentStream`).
+  - Primary bilingual conversational multi-turn chat (`generateContentStream`).
   - High Thinking mode configured with `ThinkingLevel.HIGH` for deep reasoning.
   - Multimodal document photo analysis (extracting certificate types, legibility, and details from photos while redacting any Aadhaar sequences).
-  - Real-time spoken voice turn processing.
+  - Real-time spoken voice turn processing (`generateLiveVoiceTurn`).
 - **`gemini-3.1-flash-lite`**:
-  - Ultra-fast low-latency responses for quick eligibility Q&A.
+  - Ultra-fast low-latency text responses for fast Q&A, and primary chat fallback model.
 - **`gemini-3.8-flash-tts`** + Android `TextToSpeech`:
-  - Generates culturally natural Hindi (`hi-IN`) and English (`en-IN`) spoken audio scripts before playback via Android's local TTS engine.
+  - Generates culturally natural Hindi (`hi-IN`) and English (`en-IN`) spoken audio scripts before playback via Android's local TTS engine (fallback: `gemini-3.8-flash`).
+- **`gemini-4-carbon`**:
+  - High Thinking deep reasoning mode identifier (fallback chain: `gemini-4-carbon` -> `gemini-3.8-flash` with `ThinkingLevel.HIGH` -> `gemini-3.1-flash-lite`).
+- **`gemini-4-argon`**:
+  - Complex multimodal vision identifier (fallback chain: `gemini-4-argon` -> `gemini-3.8-flash` with image input).
+
+### Automated Model Fallback Chain & Central Error Mapper
+1. **Fallback Chain**:
+   - If a preview model or free-tier quota limit is reached (limit: 0, 429, or `ResourceExhausted`), the service automatically retries the next model in the chain (`gemini-3.8-flash` -> `gemini-3.1-flash-lite`).
+   - For document image analysis, only vision-capable models (`gemini-4-argon` -> `gemini-3.8-flash`) are called (text-only lite models are excluded).
+2. **Central Error Mapper & Graceful Degradation**:
+   - `SchemeSaathiAiService.mapAiErrorToFriendlyMessage`: translates raw exceptions into friendly bilingual strings ("AI is busy right now, please try again in a minute" / "AI सर्वर अभी व्यस्त है, कृपया एक मिनट बाद पुनः प्रयास करें।").
+   - Raw exception details, URLs, and stack traces are logged with `Log.e` only and never displayed to the user.
+   - If all models fail:
+     - **Chat**: gracefully falls back to the deterministic offline summary (`buildDeterministicWizardFallback`).
+     - **Document Analysis**: gracefully prompts the user to verify the document checklist manually ("Could not analyze photo automatically, please tick the checklist manually.").
 
 ### Zero Hardcoded API Keys
 The application stores **zero Gemini or OpenAI API keys in code, Gradle files, or resource strings**. All generative AI calls route through the official Firebase AI SDK, which authenticates through Firebase App Check and Google Play Services.

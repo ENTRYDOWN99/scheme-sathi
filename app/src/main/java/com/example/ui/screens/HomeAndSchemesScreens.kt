@@ -119,8 +119,16 @@ fun HomeDashboardScreen(
                                 style = MaterialTheme.typography.titleLarge,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
+                            val roleDisplay = when (profile.role) {
+                                "CITIZEN" -> if (language == "hi") "नागरिक" else "Citizen"
+                                "CSC_OPERATOR" -> if (language == "hi") "सीएससी ऑपरेटर" else "CSC Operator"
+                                "SUPERVISOR" -> if (language == "hi") "पर्यवेक्षक" else "Supervisor"
+                                "REVIEWER" -> if (language == "hi") "समीक्षक" else "Reviewer"
+                                else -> profile.role
+                            }
+                            val roleLabel = if (language == "hi") "भूमिका" else "Role"
                             Text(
-                                text = "${profile.state} • ${profile.district} • Role: ${profile.role}",
+                                text = "${profile.state} • ${profile.district} • $roleLabel: $roleDisplay",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
@@ -150,19 +158,19 @@ fun HomeDashboardScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         SummaryStatCard(
-                            label = if (language == "hi") "पात्र (ELIGIBLE)" else "ELIGIBLE",
+                            label = if (language == "hi") "पात्र" else "ELIGIBLE",
                             count = eligibleCount,
                             badgeColor = EligibleGreen,
                             modifier = Modifier.weight(1f)
                         )
                         SummaryStatCard(
-                            label = if (language == "hi") "अज्ञात (UNKNOWN)" else "UNKNOWN",
+                            label = if (language == "hi") "अतिरिक्त जानकारी" else "UNKNOWN",
                             count = unknownCount,
                             badgeColor = UnknownAmber,
                             modifier = Modifier.weight(1f)
                         )
                         SummaryStatCard(
-                            label = if (language == "hi") "अपात्र (NOT)" else "NOT ELIGIBLE",
+                            label = if (language == "hi") "अपात्र" else "NOT ELIGIBLE",
                             count = notEligibleCount,
                             badgeColor = NotEligibleRed,
                             modifier = Modifier.weight(1f)
@@ -210,48 +218,54 @@ fun HomeDashboardScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // All 15 Screens Quick Directory
-        Text(
-            text = if (language == "hi") "सभी 15 चरण और सुविधाएं (Complete Workflow)" else "All 15 Screens & Workflow Hub",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier = Modifier.height(6.dp))
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            val quickLinks = listOf(
-                AppScreen.WELCOME to (if (language == "hi") "1. स्वागत" else "1. Welcome"),
-                AppScreen.LANGUAGE_SELECTION to (if (language == "hi") "2. भाषा/22sp" else "2. Language"),
-                AppScreen.CONSENT to (if (language == "hi") "4. सहमति" else "4. Consent"),
-                AppScreen.PROFILE_SETUP to (if (language == "hi") "5. प्रोफ़ाइल" else "5. Profile"),
-                AppScreen.AI_CHAT to (if (language == "hi") "6. AI चैट" else "6. AI Chat"),
-                AppScreen.VOICE_ASSISTANT to (if (language == "hi") "7. वॉइस असिस्टेंट" else "7. Voice Live"),
-                AppScreen.SCHEME_RESULTS to (if (language == "hi") "8. योजनाएं (5)" else "8. Schemes (5)"),
-                AppScreen.SCHEME_DETAILS to (if (language == "hi") "9. योजना विवरण" else "9. Scheme Details"),
-                AppScreen.ELIGIBILITY_RESULTS to (if (language == "hi") "10. नियम इंजन" else "10. Eligibility"),
-                AppScreen.DOCUMENT_CHECKLIST to (if (language == "hi") "11. दस्तावेज़ स्कैनर" else "11. Docs & Vision"),
-                AppScreen.APPLICATION_FORM to (if (language == "hi") "12. आवेदन फॉर्म" else "12. App Form"),
-                AppScreen.REVIEW_CONFIRM to (if (language == "hi") "13. समीक्षा व पुष्टि" else "13. Human Gate"),
-                AppScreen.APPLICATION_TRACKING to (if (language == "hi") "14. स्थिति ट्रैकिंग" else "14. Tracking"),
-                AppScreen.ALERTS_SETTINGS to (if (language == "hi") "15. कार्य, अलर्ट व ऑडिट" else "15. Tasks & Audit")
+        // All 15 Screens Quick Directory (Debug only)
+        if (com.example.BuildConfig.DEBUG) {
+            Text(
+                text = if (language == "hi") "सभी 15 चरण और सुविधाएं (Debug Hub)" else "All 15 Screens & Workflow Hub (Debug)",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
             )
-            quickLinks.forEach { (screen, label) ->
-                AssistChip(
-                    onClick = { onNavigate(screen) },
-                    label = { Text(label) }
+            Spacer(modifier = Modifier.height(6.dp))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                val quickLinks = listOf(
+                    AppScreen.WELCOME to (if (language == "hi") "स्वागत" else "Welcome"),
+                    AppScreen.LANGUAGE_SELECTION to (if (language == "hi") "भाषा" else "Language"),
+                    AppScreen.CONSENT to (if (language == "hi") "सहमति" else "Consent"),
+                    AppScreen.PROFILE_SETUP to (if (language == "hi") "प्रोफ़ाइल" else "Profile"),
+                    AppScreen.AI_CHAT to (if (language == "hi") "AI चैट" else "AI Chat"),
+                    AppScreen.VOICE_ASSISTANT to (if (language == "hi") "वॉइस" else "Voice"),
+                    AppScreen.SCHEME_RESULTS to (if (language == "hi") "योजनाएं" else "Schemes"),
+                    AppScreen.SCHEME_DETAILS to (if (language == "hi") "विवरण" else "Details"),
+                    AppScreen.ELIGIBILITY_RESULTS to (if (language == "hi") "नियम इंजन" else "Eligibility"),
+                    AppScreen.DOCUMENT_CHECKLIST to (if (language == "hi") "दस्तावेज़" else "Docs & Vision"),
+                    AppScreen.APPLICATION_FORM to (if (language == "hi") "आवेदन" else "App Form"),
+                    AppScreen.REVIEW_CONFIRM to (if (language == "hi") "समीक्षा" else "Human Gate"),
+                    AppScreen.APPLICATION_TRACKING to (if (language == "hi") "ट्रैकिंग" else "Tracking"),
+                    AppScreen.ALERTS_SETTINGS to (if (language == "hi") "कार्य/अलर्ट" else "Tasks & Audit")
                 )
+                quickLinks.forEach { (screen, label) ->
+                    AssistChip(
+                        onClick = { onNavigate(screen) },
+                        label = { Text(label) }
+                    )
+                }
             }
+            Spacer(modifier = Modifier.height(16.dp))
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
 
         // Live 5 Government Schemes Cards
         Text(
-            text = if (language == "hi") "5 सरकारी कल्याण योजनाएं (Deterministic Evaluation)" else "5 Government Welfare Schemes (Deterministic Engine)",
+            text = if (language == "hi") "सरकारी कल्याण योजनाएं" else "Government Welfare Schemes",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = if (language == "hi") "पात्रता नियम इंजन द्वारा सत्यापित (5 प्रमुख योजनाएं)" else "Verified by Scheme Eligibility Engine (5 Flagship Schemes)",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary
         )
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -364,9 +378,9 @@ fun OutcomePill(
     language: String
 ) {
     val (bg, label) = when (outcome) {
-        EligibilityOutcome.ELIGIBLE -> EligibleGreen to (if (language == "hi") "पात्र (ELIGIBLE)" else "ELIGIBLE")
-        EligibilityOutcome.NOT_ELIGIBLE -> NotEligibleRed to (if (language == "hi") "अपात्र (NOT_ELIGIBLE)" else "NOT_ELIGIBLE")
-        EligibilityOutcome.UNKNOWN -> UnknownAmber to (if (language == "hi") "अज्ञात (UNKNOWN)" else "UNKNOWN")
+        EligibilityOutcome.ELIGIBLE -> EligibleGreen to (if (language == "hi") "पात्र" else "ELIGIBLE")
+        EligibilityOutcome.NOT_ELIGIBLE -> NotEligibleRed to (if (language == "hi") "अपात्र" else "NOT ELIGIBLE")
+        EligibilityOutcome.UNKNOWN -> UnknownAmber to (if (language == "hi") "अज्ञात" else "UNKNOWN")
     }
     Surface(
         color = bg,
@@ -406,7 +420,7 @@ fun SchemeResultsScreen(
             .padding(16.dp)
     ) {
         Text(
-            text = if (language == "hi") "8. सरकारी योजना खोज परिणाम (5 योजनाएं)" else "8. Government Scheme Discovery (5 Schemes)",
+            text = if (language == "hi") "सरकारी योजना खोज परिणाम (5 योजनाएं)" else "Government Scheme Discovery (5 Schemes)",
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.primary
         )
@@ -522,7 +536,7 @@ fun SchemeDetailsScreen(
         Spacer(modifier = Modifier.height(10.dp))
 
         Text(
-            text = if (language == "hi") "9. ${scheme.nameHi}" else "9. ${scheme.nameEn}",
+            text = if (language == "hi") scheme.nameHi else scheme.nameEn,
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.primary
         )
@@ -616,7 +630,7 @@ fun SchemeDetailsScreen(
                     .height(52.dp)
                     .testTag("scheme_details_to_checklist_btn")
             ) {
-                Text(if (language == "hi") "11. दस्तावेज़ जांचें →" else "11. Document Checklist →")
+                Text(if (language == "hi") "दस्तावेज़ जांचें →" else "Document Checklist →")
             }
         }
     }
@@ -641,7 +655,7 @@ fun EligibilityResultsScreen(
             .padding(16.dp)
     ) {
         Text(
-            text = if (language == "hi") "10. नियम इंजन पात्रता विश्लेषण (Deterministic Engine)" else "10. Deterministic Eligibility Engine Breakdown",
+            text = if (language == "hi") "नियम इंजन पात्रता विश्लेषण" else "Deterministic Eligibility Engine Breakdown",
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.primary
         )

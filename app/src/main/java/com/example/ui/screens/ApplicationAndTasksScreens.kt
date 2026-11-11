@@ -63,6 +63,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.R
 import com.example.data.model.AuditFinding
@@ -117,7 +118,7 @@ fun DocumentChecklistScreen(
             .padding(16.dp)
     ) {
         Text(
-            text = if (language == "hi") "11. दस्तावेज़ जांच सूची और AI दस्तावेज़ स्कैनर" else "11. Document Checklist & AI Vision Scanner",
+            text = if (language == "hi") "दस्तावेज़ जांच सूची और AI स्कैनर" else "Document Checklist & AI Vision Scanner",
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.primary
         )
@@ -134,7 +135,7 @@ fun DocumentChecklistScreen(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Multimodal Document Image Analysis Card (using gemini-4-argon)
+        // Multimodal Document Image Analysis Card
         Card(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
             modifier = Modifier.fillMaxWidth()
@@ -145,9 +146,9 @@ fun DocumentChecklistScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = if (language == "hi") {
-                            "AI दस्तावेज़ छवि विश्लेषक (gemini-4-argon)"
+                            "AI दस्तावेज़ छवि विश्लेषक"
                         } else {
-                            "AI Document Photo Analyzer (gemini-4-argon)"
+                            "AI Document Photo Analyzer"
                         },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
@@ -156,9 +157,9 @@ fun DocumentChecklistScreen(
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = if (language == "hi") {
-                        "अपनी खतौनी, राशन कार्ड या पासबुक की फोटो चुनें या उदाहरण दस्तावेज़ का gemini-4-argon से विश्लेषण करें (आधार नंबर स्वतः छिपा दिया जाता है)।"
+                        "अपनी खतौनी, राशन कार्ड या पासबुक की फोटो चुनें या नमूना दस्तावेज़ का AI से विश्लेषण करें (आधार नंबर स्वतः छिपा दिया जाता है)।"
                     } else {
-                        "Pick a photo of your certificate/passbook via Android Photo Picker or analyze a sample document using gemini-4-argon."
+                        "Pick a photo of your certificate/passbook via Android Photo Picker or analyze a sample document (Aadhaar numbers are automatically masked)."
                     },
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -175,7 +176,7 @@ fun DocumentChecklistScreen(
                             .weight(1f)
                             .testTag("pick_document_photo_btn")
                     ) {
-                        Text(if (language == "hi") "फ़ोटो चुनें (Photo Picker)" else "Upload Document Photo")
+                        Text(if (language == "hi") "फ़ोटो चुनें" else "Upload Photo")
                     }
                     OutlinedButton(
                         onClick = {
@@ -192,7 +193,7 @@ fun DocumentChecklistScreen(
                             .weight(1f)
                             .testTag("analyze_sample_doc_btn")
                     ) {
-                        Text(if (language == "hi") "नमूना जांचें (Argon)" else "Scan Sample (Argon)")
+                        Text(if (language == "hi") "नमूना जांचें" else "Scan Sample")
                     }
                 }
 
@@ -201,7 +202,7 @@ fun DocumentChecklistScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("gemini-4-argon analyzing document image...")
+                        Text(if (language == "hi") "दस्तावेज़ छवि का AI विश्लेषण जारी है..." else "Analyzing document image with AI...")
                     }
                 }
 
@@ -241,7 +242,7 @@ fun DocumentChecklistScreen(
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = if (language == "hi") {
-                            "विकल्प (Alternatives): ${doc.alternativesHi}"
+                            "विकल्प: ${doc.alternativesHi}"
                         } else {
                             "Alternatives: ${doc.alternativesEn}"
                         },
@@ -257,20 +258,28 @@ fun DocumentChecklistScreen(
                         color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
                         DocumentHaveStatus.entries.forEach { st ->
                             FilterChip(
                                 selected = currentStatus == st,
                                 onClick = { onUpdateDocStatus(doc.id, st) },
                                 label = {
                                     Text(
-                                        when (st) {
-                                            DocumentHaveStatus.HAVE -> if (language == "hi") "मेरे पास है (HAVE)" else "HAVE"
-                                            DocumentHaveStatus.MISSING -> if (language == "hi") "नहीं है (MISSING)" else "MISSING"
-                                            DocumentHaveStatus.UNKNOWN -> if (language == "hi") "पता नहीं (UNKNOWN)" else "UNKNOWN"
-                                        }
+                                        text = when (st) {
+                                            DocumentHaveStatus.HAVE -> if (language == "hi") "उपलब्ध है" else "Have"
+                                            DocumentHaveStatus.MISSING -> if (language == "hi") "नहीं है" else "Missing"
+                                            DocumentHaveStatus.UNKNOWN -> if (language == "hi") "पता नहीं" else "Unknown"
+                                        },
+                                        maxLines = 2,
+                                        softWrap = true,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.fillMaxWidth()
                                     )
-                                }
+                                },
+                                modifier = Modifier.weight(1f)
                             )
                         }
                     }
@@ -286,7 +295,7 @@ fun DocumentChecklistScreen(
                 .height(54.dp)
                 .testTag("checklist_to_form_btn")
         ) {
-            Text(if (language == "hi") "12. आवेदन फॉर्म तैयार करें (Prefill Form) →" else "12. Proceed to Prefilled Application Form →")
+            Text(if (language == "hi") "आवेदन फॉर्म तैयार करें →" else "Proceed to Prefilled Application Form →")
         }
     }
 }
@@ -311,7 +320,7 @@ fun ApplicationFormScreen(
             .padding(16.dp)
     ) {
         Text(
-            text = if (language == "hi") "12. आवेदन फॉर्म (Field Provenance Tracking)" else "12. Application Preparation & Field Provenance",
+            text = if (language == "hi") "आवेदन फॉर्म (फील्ड स्रोत ट्रैकिंग)" else "Application Preparation & Field Provenance",
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.primary
         )
@@ -463,7 +472,7 @@ fun ReviewConfirmScreen(
             .padding(16.dp)
     ) {
         Text(
-            text = if (language == "hi") "13. समीक्षा और मानव पुष्टि गेट (Human Confirmation Gate)" else "13. Review & Human Confirmation Gate",
+            text = if (language == "hi") "समीक्षा और मानव पुष्टि गेट (Human Confirmation Gate)" else "Review & Human Confirmation Gate",
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.primary
         )
@@ -778,7 +787,7 @@ fun AlertsAndSettingsScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = if (language == "hi") "15. सहयोगात्मक कार्य, अलर्ट और सुरक्षा ऑडिट" else "15. Collaborative Tasks, Alerts & Audit Report",
+                text = if (language == "hi") "सहयोगात्मक कार्य, अलर्ट और सुरक्षा ऑडिट" else "Collaborative Tasks, Alerts & Audit Report",
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.weight(1f)
@@ -798,11 +807,18 @@ fun AlertsAndSettingsScreen(
         // Create Collaborative Task & Reminder Card
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
+                val roleDisplay = when (currentRole) {
+                    "CITIZEN" -> if (language == "hi") "नागरिक" else "Citizen"
+                    "CSC_OPERATOR" -> if (language == "hi") "सीएससी ऑपरेटर" else "CSC Operator"
+                    "SUPERVISOR" -> if (language == "hi") "पर्यवेक्षक" else "Supervisor"
+                    "REVIEWER" -> if (language == "hi") "समीक्षक" else "Reviewer"
+                    else -> currentRole
+                }
                 Text(
                     text = if (language == "hi") {
-                        "नया सहयोगात्मक कार्य और रिमाइंडर जोड़ें (RBAC: $currentRole)"
+                        "नया सहयोगात्मक कार्य और रिमाइंडर जोड़ें (भूमिका: $roleDisplay)"
                     } else {
-                        "Assign Collaborative Task & Schedule Reminder (Active Role: $currentRole)"
+                        "Assign Collaborative Task & Schedule Reminder (Role: $roleDisplay)"
                     },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold

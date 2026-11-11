@@ -51,6 +51,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.credentials.CredentialManager
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
@@ -345,14 +346,26 @@ fun AuthenticatedSchemeSaathiApp(
                         ),
                         onClick = { viewModel.navigateTo(AppScreen.HOME_DASHBOARD) },
                         icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-                        label = { Text(if (language == "hi") "होम" else "Home") },
+                        label = {
+                            Text(
+                                text = if (language == "hi") "होम" else "Home",
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        },
                         modifier = Modifier.testTag("nav_home")
                     )
                     NavigationBarItem(
                         selected = currentScreen in setOf(AppScreen.AI_CHAT, AppScreen.VOICE_ASSISTANT),
                         onClick = { viewModel.navigateTo(AppScreen.AI_CHAT) },
                         icon = { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = "Chat") },
-                        label = { Text(if (language == "hi") "AI चैट" else "Chat") },
+                        label = {
+                            Text(
+                                text = if (language == "hi") "चैट" else "Chat",
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        },
                         modifier = Modifier.testTag("nav_chat")
                     )
                     NavigationBarItem(
@@ -363,15 +376,27 @@ fun AuthenticatedSchemeSaathiApp(
                             AppScreen.APPLICATION_TRACKING
                         ),
                         onClick = { viewModel.navigateTo(AppScreen.DOCUMENT_CHECKLIST) },
-                        icon = { Icon(Icons.Default.Assignment, contentDescription = "Applications") },
-                        label = { Text(if (language == "hi") "आवेदन" else "Applications") },
+                        icon = { Icon(Icons.Default.Assignment, contentDescription = "Apply") },
+                        label = {
+                            Text(
+                                text = if (language == "hi") "आवेदन" else "Apply",
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        },
                         modifier = Modifier.testTag("nav_applications")
                     )
                     NavigationBarItem(
                         selected = currentScreen == AppScreen.ALERTS_SETTINGS,
                         onClick = { viewModel.navigateTo(AppScreen.ALERTS_SETTINGS) },
-                        icon = { Icon(Icons.Default.NotificationsActive, contentDescription = "Alerts & Tasks") },
-                        label = { Text(if (language == "hi") "कार्य/अलर्ट" else "Alerts") },
+                        icon = { Icon(Icons.Default.NotificationsActive, contentDescription = "Alerts") },
+                        label = {
+                            Text(
+                                text = if (language == "hi") "कार्य/अलर्ट" else "Alerts",
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        },
                         modifier = Modifier.testTag("nav_alerts")
                     )
                     NavigationBarItem(
@@ -382,8 +407,14 @@ fun AuthenticatedSchemeSaathiApp(
                             AppScreen.WELCOME
                         ),
                         onClick = { viewModel.navigateTo(AppScreen.PROFILE_SETUP) },
-                        icon = { Icon(Icons.Default.Settings, contentDescription = "Settings & Profile") },
-                        label = { Text(if (language == "hi") "प्रोफ़ाइल" else "Settings") },
+                        icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
+                        label = {
+                            Text(
+                                text = if (language == "hi") "प्रोफ़ाइल" else "Settings",
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        },
                         modifier = Modifier.testTag("nav_settings")
                     )
                 }

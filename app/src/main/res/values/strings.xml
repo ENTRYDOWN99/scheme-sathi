@@ -1,8 +1,38 @@
 <resources>
     <string name="app_name">Scheme Saathi</string>
-    <string name="app_subtitle_hi">सरकारी कल्याण योजना एवं कार्य सहायक</string>
-    <string name="app_subtitle_en">Citizen Welfare Scheme &amp; Collaborative Task Companion</string>
-    <string name="sign_in_with_google">Sign in with Google / गूगल से साइन इन करें</string>
+    <string name="app_subtitle">Citizen Welfare Scheme &amp; Collaborative Task Companion</string>
+    <string name="sign_in_with_google">Sign in with Google</string>
     <string name="no_aadhaar_notice">No Aadhaar number is ever collected or stored. Sensitive fields are AES-256-GCM encrypted.</string>
     <string name="human_gate_notice">Scheme Saathi does not automatically submit government applications. All submissions require explicit citizen review and guided handoff.</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_chat">Chat</string>
+    <string name="nav_apply">Apply</string>
+    <string name="nav_alerts">Alerts</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Roles -->
+    <string name="role_label">Role</string>
+    <string name="role_citizen">Citizen</string>
+    <string name="role_csc_operator">CSC Operator</string>
+    <string name="role_supervisor">Supervisor</string>
+    <string name="role_reviewer">Reviewer</string>
+
+    <!-- Document Statuses -->
+    <string name="doc_have">Have</string>
+    <string name="doc_missing">Missing</string>
+    <string name="doc_unknown">Unknown</string>
+
+    <!-- Eligibility Outcomes -->
+    <string name="outcome_eligible">Eligible</string>
+    <string name="outcome_unknown">Unknown</string>
+    <string name="outcome_not_eligible">Not Eligible</string>
+
+    <!-- AI Messages & Errors -->
+    <string name="ai_error_busy">AI is busy right now, please try again in a minute.</string>
+    <string name="ai_error_network">Please check your internet connection and try again.</string>
+    <string name="ai_error_generic">AI service is temporarily unavailable. Please try again shortly.</string>
+    <string name="doc_analysis_fallback">Could not analyze photo automatically, please tick the checklist manually.</string>
+    <string name="ai_safety_human_gate">Safety Guardrail (Human Confirmation Gate): Scheme Saathi AI is strictly prohibited from auto-submitting government applications. Per security and governance policies, citizen welfare submissions require mandatory human review on the Review &amp; Confirm screen with a verifiable SHA-256 snapshot hash.</string>
 </resources>

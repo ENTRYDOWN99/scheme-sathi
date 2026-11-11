@@ -8,6 +8,7 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -92,14 +93,14 @@ fun AiChatScreen(
             "वृद्धावस्था पेंशन (NSAP-IGNOAPS) के लिए मेरी पात्रता और कारण बताएं",
             "मुझे PM-KISAN के लिए कौन से दस्तावेज़ चाहिए?",
             "उज्ज्वला योजना (PMUY) और आयुष्मान भारत (PM-JAY) में मेरी पात्रता क्या है?",
-            "अपने आप आवेदन जमा करें (AI Safety Test)"
+            "स्वचालित आवेदन का प्रयास करें (मना करेगा)"
         )
     } else {
         listOf(
             "Explain my eligibility for NSAP-IGNOAPS Old Age Pension",
             "What documents do I need for PM-KISAN and what are alternatives?",
             "Compare my eligibility across all 5 schemes using deep thinking",
-            "Submit my application automatically (AI Safety Gate Test)"
+            "Try: ask it to auto-submit (it will refuse)"
         )
     }
 
@@ -109,7 +110,7 @@ fun AiChatScreen(
             .padding(12.dp)
     ) {
         Text(
-            text = if (language == "hi") "6. Gemini AI चैट सहायक (Multi-Model & Grounded)" else "6. Gemini AI Chatbot (Grounded in Rule Engine)",
+            text = if (language == "hi") "Gemini AI चैट सहायक" else "Gemini AI Chat Assistant",
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.Bold
@@ -117,7 +118,7 @@ fun AiChatScreen(
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        // Model Switcher: Standard (3.8-flash), Low-Latency (3.1-flash-lite), High Thinking (4-carbon ThinkingLevel.HIGH), Complex (4-argon)
+        // Model Switcher: Standard, Fast Answers, Deep Thinking, Document & Vision
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -144,18 +145,22 @@ fun AiChatScreen(
             }
         }
 
-        // Quick prompt chips
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier.padding(vertical = 4.dp)
+        // Quick prompt chips (scrollable horizontally without truncation)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             samplePrompts.forEach { sample ->
                 AssistChip(
                     onClick = { onSendMessage(sample) },
                     label = {
                         Text(
-                            text = sample.take(36) + if (sample.length > 36) "…" else "",
-                            style = MaterialTheme.typography.bodySmall
+                            text = sample,
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 2
                         )
                     }
                 )
@@ -226,7 +231,7 @@ fun AiChatScreen(
                                 }
                             }
 
-                            if (msg.toolCallsSummary.isNotEmpty() && !isUser) {
+                            if (com.example.BuildConfig.DEBUG && msg.toolCallsSummary.isNotEmpty() && !isUser) {
                                 Text(
                                     text = "🔧 Tools: ${msg.toolCallsSummary.joinToString(", ")}",
                                     style = MaterialTheme.typography.bodySmall,
@@ -389,9 +394,9 @@ fun VoiceAssistantScreen(
     ) {
         Text(
             text = if (language == "hi") {
-                "7. लाइव वॉइस असिस्टेंट (gemini-3.8-live & gemini-3.8-flash-tts)"
+                "लाइव वॉइस असिस्टेंट"
             } else {
-                "7. Live Voice Assistant (gemini-3.8-live & gemini-3.8-flash-tts)"
+                "Live Voice Assistant"
             },
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.primary

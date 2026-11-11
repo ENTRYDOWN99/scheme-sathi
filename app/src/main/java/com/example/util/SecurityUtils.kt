@@ -113,13 +113,20 @@ object SecurityUtils {
         }
         val autoSubmitPatterns = listOf(
             "submit my application automatically",
-            "auto submit to government",
+            "auto submit",
+            "auto-submit",
+            "submit automatically",
+            "automatically submit",
             "confirm and submit for me",
+            "ask it to auto-submit",
+            "will refuse",
             "सीधे फॉर्म सबमिट कर दो",
-            "अपने आप आवेदन जमा करें"
+            "सीधे सबमिट",
+            "अपने आप आवेदन जमा करें",
+            "स्वचालित आवेदन"
         )
         if (autoSubmitPatterns.any { lower.contains(it) }) {
-            return true to "HUMAN_GATE_BLOCK: AI is strictly prohibited from confirming or submitting government applications. Please review and confirm on the Review & Confirm screen."
+            return true to "HUMAN_GATE_BLOCK: AI is strictly prohibited from confirming or submitting government applications. Per security policy, citizen welfare submissions require mandatory human verification on the Review & Confirm screen with a verifiable SHA-256 snapshot hash."
         }
         return false to null
     }

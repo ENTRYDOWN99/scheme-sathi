@@ -1,0 +1,38 @@
+@import "tailwindcss";
+@import "../../../shared/design-tokens/tokens.css";
+
+html {
+  font-size: var(--saathi-font-size, 16px);
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--saathi-background);
+  color: var(--saathi-on-surface);
+  font-family: 'Noto Sans', 'Noto Sans Devanagari', system-ui, -apple-system, sans-serif;
+  line-height: 1.55;
+  min-height: 100vh;
+}
+
+:focus-visible {
+  outline: 3px solid var(--saathi-secondary);
+  outline-offset: 2px;
+}
+
+.saathi-card {
+  background-color: var(--saathi-surface);
+  border: 1px solid color-mix(in srgb, var(--saathi-outline) 28%, transparent);
+  border-radius: 16px;
+}
+
+.saathi-btn-primary {
+  background-color: var(--saathi-primary);
+  color: var(--saathi-on-primary);
+  min-height: 48px;
+}
+
+.saathi-btn-secondary {
+  background-color: var(--saathi-secondary);
+  color: var(--saathi-on-secondary);
+  min-height: 48px;
+}

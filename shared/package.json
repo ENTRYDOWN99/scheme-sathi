@@ -1,0 +1,12 @@
+{
+  "name": "@schemesaathi/shared",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./api-client": "./api-client/index.ts",
+    "./tokens": "./design-tokens/tokens.json",
+    "./i18n/en": "./i18n/en.json",
+    "./i18n/hi": "./i18n/hi.json"
+  }
+}

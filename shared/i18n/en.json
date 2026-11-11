@@ -1,0 +1,61 @@
+{
+  "appName": "SchemeSaathi",
+  "tagline": "Your bilingual civic guide for welfare schemes, documents & handoff.",
+  "disclaimer": "Not an official government app. Informational guidance only; final eligibility rests with the issuing government authority.",
+  "noAadhaarNotice": "Privacy Guard: Never enter your 12-digit Aadhaar number in SchemeSaathi.",
+  "nav": {
+    "home": "Home",
+    "chat": "AI Chat",
+    "apply": "Apply",
+    "alerts": "Alerts",
+    "settings": "Settings",
+    "profile": "Profile",
+    "operator": "CSC / Review",
+    "login": "Sign In"
+  },
+  "roles": {
+    "CITIZEN": "Citizen",
+    "CSC_OPERATOR": "CSC Operator",
+    "SUPERVISOR": "Supervisor",
+    "REVIEWER": "Reviewer"
+  },
+  "outcomes": {
+    "ELIGIBLE": "Eligible",
+    "NOT_ELIGIBLE": "Not Eligible",
+    "UNKNOWN": "Needs Info / Verification"
+  },
+  "documents": {
+    "HAVE": "Have",
+    "MISSING": "Missing",
+    "UNKNOWN": "Unknown"
+  },
+  "dob": {
+    "label": "Date of Birth (DD/MM/YYYY)",
+    "hint": "DD/MM/YYYY",
+    "ageDisplay": "Age: {{age}} yrs",
+    "legacyNotice": "Saved birth year {{year}} found. Enter full DD/MM/YYYY for exact birthday calculation.",
+    "errors": {
+      "INVALID_FORMAT": "Enter full date as DD/MM/YYYY.",
+      "INVALID_CALENDAR_DATE": "Invalid calendar date (check day & month).",
+      "FUTURE_DATE": "Date of birth cannot be in the future.",
+      "AGE_OUT_OF_RANGE": "Age must be between 0 and 120 years."
+    }
+  },
+  "aiErrors": {
+    "busy": "AI is busy right now, please try again in a minute.",
+    "network": "Please check your internet connection and try again.",
+    "generic": "Unable to reach AI right now. Showing offline rule summary below."
+  },
+  "confirmationGate": {
+    "title": "Human Confirmation Gate",
+    "subtitle": "AI never auto-submits. Review every field and confirm manually before portal handoff.",
+    "checkReviewed": "I have personally reviewed the citizen details and document readiness summary.",
+    "checkOfficialPortal": "I understand final submission and approval rest with the official government portal / office.",
+    "checkHuman": "I am a human applicant or authorized CSC operator confirming this handoff.",
+    "submitButton": "Confirm & Unlock Guided Handoff"
+  },
+  "dpdp": {
+    "exportTitle": "Export My Data (DPDP JSON)",
+    "deleteTitle": "Erase Personal Profile & Checklists"
+  }
+}

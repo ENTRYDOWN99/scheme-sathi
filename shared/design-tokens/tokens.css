@@ -1,0 +1,52 @@
+:root {
+  --saathi-primary: #1b5e3f;
+  --saathi-on-primary: #ffffff;
+  --saathi-primary-container: #cfe9da;
+  --saathi-on-primary-container: #0a2e1d;
+  --saathi-secondary: #e07b00;
+  --saathi-on-secondary: #ffffff;
+  --saathi-secondary-container: #ffdfbe;
+  --saathi-on-secondary-container: #3f2100;
+  --saathi-background: #f6f4ef;
+  --saathi-surface: #ffffff;
+  --saathi-surface-variant: #eae6dd;
+  --saathi-on-surface: #1c1b18;
+  --saathi-on-surface-muted: #4b4840;
+  --saathi-outline: #7e786b;
+  --saathi-eligible-bg: #e6f4ec;
+  --saathi-eligible-fg: #1b5e3f;
+  --saathi-not-eligible-bg: #fceaea;
+  --saathi-not-eligible-fg: #b3261e;
+  --saathi-unknown-bg: #fff5e5;
+  --saathi-unknown-fg: #b26a00;
+  --saathi-error: #b3261e;
+  --saathi-font-size: 16px;
+}
+
+.dark {
+  --saathi-primary: #8bd6af;
+  --saathi-on-primary: #063822;
+  --saathi-primary-container: #134a31;
+  --saathi-on-primary-container: #cfe9da;
+  --saathi-secondary: #ffb866;
+  --saathi-on-secondary: #482600;
+  --saathi-secondary-container: #673800;
+  --saathi-on-secondary-container: #ffdfbe;
+  --saathi-background: #121614;
+  --saathi-surface: #1e2420;
+  --saathi-surface-variant: #2b322d;
+  --saathi-on-surface: #ecece8;
+  --saathi-on-surface-muted: #c1c7c1;
+  --saathi-outline: #8c938d;
+  --saathi-eligible-bg: #163a28;
+  --saathi-eligible-fg: #8bd6af;
+  --saathi-not-eligible-bg: #441b1a;
+  --saathi-not-eligible-fg: #f2b8b5;
+  --saathi-unknown-bg: #3d2b10;
+  --saathi-unknown-fg: #ffd08a;
+  --saathi-error: #f2b8b5;
+}
+
+.large-text {
+  --saathi-font-size: 20px;
+}
